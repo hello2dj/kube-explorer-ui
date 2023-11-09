@@ -270,7 +270,7 @@ export default {
         <div class="title">
           <div class="menu-spacer" />
           <div class="side-menu-logo">
-            <BrandImage file-name="rancher-logo.svg" />
+            <!-- <BrandImage file-name="rancher-logo.svg" /> -->
           </div>
         </div>
         <div class="body">
@@ -333,7 +333,7 @@ export default {
         -->
           <template v-if="clusters && !!clusters.length">
             <div class="category">
-              {{ t('nav.categories.explore') }}
+              <!-- {{ t('nav.categories.explore') }} -->
             </div>
 
             <div
@@ -368,10 +368,11 @@ export default {
                   <ClusterProviderIcon
                     :small="true"
                     :cluster="c"
-                    class="rancher-provider-icon mr-10"
+                    class="mr-10"
                   />
                   <div class="cluster-name">
-                    {{ c.label }}
+                    轻云集群
+                    <!-- {{ c.label }} -->
                   </div>
                 </nuxt-link>
                 <span

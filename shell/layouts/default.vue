@@ -73,6 +73,7 @@ export default {
       unwatchPin:       undefined,
       wmPin:            null,
       draggable:        false,
+      hideNav:          true,
     };
   },
 
@@ -630,14 +631,15 @@ export default {
       class="dashboard-content"
       :class="{[pinClass]: true}"
     >
-      <Header />
+      <!-- <Header /> -->
       <nav
-        v-if="clusterReady"
+        v-if="false"
         class="side-nav"
       >
         <div class="nav">
           <template v-for="(g) in groups">
             <Group
+              v-if="g.name !='monitoring'"
               ref="groups"
               :key="g.name"
               id-prefix=""
@@ -777,7 +779,7 @@ export default {
         <nuxt class="outlet" />
       </main>
       <div
-        v-if="$refs.draggableZone"
+        v-if="$refs.draggableZone && false"
         class="wm"
         :class="{
           'drag-end': !$refs.draggableZone.drag.active,
@@ -834,18 +836,13 @@ export default {
 
     &.pin-bottom {
       grid-template-areas:
-        "header  header"
-        "nav       main"
-        "wm         wm";
-      grid-template-rows:    var(--header-height) auto  var(--wm-height, 0px);
-      grid-template-columns: var(--nav-width)     auto;
+        "main";
+      grid-template-columns: auto;
     }
 
     &.pin-left {
       grid-template-areas:
-        "header  header  header"
         "wm       nav     main";
-      grid-template-rows:    var(--header-height) auto;
       grid-template-columns: var(--wm-width, 0px) var(--nav-width) auto;
     }
 

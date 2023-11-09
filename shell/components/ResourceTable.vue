@@ -539,7 +539,7 @@ export default {
       />
     </template>
 
-    <template #shortkeys>
+    <!-- <template #shortkeys>
       <button
         v-shortkey.once="['e']"
         class="hide"
@@ -562,6 +562,6 @@ export default {
         class="hide"
         @shortkey="keyAction('remove')"
       />
-    </template>
+    </template> -->
   </SortableTable>
 </template>

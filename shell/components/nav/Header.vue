@@ -388,7 +388,7 @@ export default {
             ref="clusterName"
             class="cluster-name"
           >
-            {{ currentCluster.spec.displayName }}
+            轻云集群 <!-- {{ currentCluster.spec.displayName }} -->
           </div>
           <ClusterBadge
             v-if="currentCluster"
@@ -483,7 +483,7 @@ export default {
               @close="closeImport"
             />
           </modal>
-
+<!-- 
           <button
             v-if="showKubeShell"
             id="btn-kubectl"
@@ -496,7 +496,7 @@ export default {
             @click="currentCluster.openShell()"
           >
             <i class="icon icon-terminal icon-lg" />
-          </button>
+          </button> -->
 
           <!-- <button
             v-if="showKubeConfig"

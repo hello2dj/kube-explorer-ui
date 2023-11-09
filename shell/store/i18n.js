@@ -1,12 +1,12 @@
 import merge from 'lodash/merge';
 import IntlMessageFormat from 'intl-messageformat';
 import { get } from '@shell/utils/object';
-import en from '@shell/assets/translations/en-us.yaml';
+import zh from '@shell/assets/translations/zh-hans.yaml';
 import { getProduct, getVendor, DOCS_BASE } from '@shell/config/private-label';
 import { loadTranslation } from '@shell/utils/dynamic-importer';
 
 const NONE = 'none';
-const DEFAULT_LOCALE = 'en-us';
+const DEFAULT_LOCALE = 'zh-hans';
 
 // Formatters can't be serialized into state
 const intlCache = {};
@@ -18,14 +18,14 @@ export const state = function() {
   // const available = translationContext.keys().map(path => path.replace(/^.*\/([^\/]+)\.[^.]+$/, '$1'));
   // Using require.context() forces them to all be in the same webpack chunk name... just hardcode the list for now so zh-hans
   // gets generated as it's own chunk instead of being loaded all the time.
-  const available = [DEFAULT_LOCALE, 'zh-hans'];
+  const available = [DEFAULT_LOCALE];
 
   const out = {
     default:      DEFAULT_LOCALE,
     selected:     null,
     previous:     null,
     available,
-    translations: { [DEFAULT_LOCALE]: en },
+    translations: { [DEFAULT_LOCALE]: zh },
   };
 
   return out;

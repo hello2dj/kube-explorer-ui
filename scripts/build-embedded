@@ -21,7 +21,7 @@ DIR=${GIT_TAG:-$COMMIT_BRANCH}
 OUTPUT_DIR=dist/${DIR}-embedded
 
 echo "Building..."
-COMMIT=${COMMIT} VERSION=${VERSION} OUTPUT_DIR=$OUTPUT_DIR ROUTER_BASE='/dashboard/' yarn run build
+COMMIT=${COMMIT} VERSION=${VERSION} OUTPUT_DIR=$OUTPUT_DIR API='https://127.0.0.1:8081' RESOURCE_BASE='/kubeui' ROUTER_BASE='/kubeui/' yarn run build
 
 if [ -v EMBED_PKG ]; then
     echo "Build and embed plugin from: $EMBED_PKG"
@@ -40,18 +40,6 @@ if [ -v EMBED_PKG ]; then
     ls -alR $OUTPUT_DIR/$PKG_NAME
 fi
 
-# echo "Update app router config..."
-# find dist/* -maxdepth 1 -name "*.html" | xargs grep -l 'basePath:"/dashboard/"' | xargs sed -i.bak -e 's/basePath:"\/dashboard\/"/basePath:decodeURI(document.querySelector("head > base").href.replace(window.location.origin, ""))/'
-
 echo "Destroying..."
 find $OUTPUT_DIR -name "index.html" -mindepth 2 -exec rm {} \;
 find $OUTPUT_DIR -type d -empty -depth -exec rmdir {} \;
-
-TARBALL=${DIR}.tar.gz
-echo "Compressing to ${TARBALL}..."
-tar -czf dist/${TARBALL} $OUTPUT_DIR/
-
-echo "Cleaning up..."
-rm -r $OUTPUT_DIR
-
-ls -alR dist/

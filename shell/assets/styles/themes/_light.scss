@@ -23,13 +23,17 @@ $lightest  : #FFFFFF;
 //color for items that are not enabled
 $disabled  : $medium;
 
-$primary         : #3D98D3;
+// $primary         : #3D98D3;
+$primary         : #3d87ff;
 $secondary       : $darker;
-$link            : #3D98D3;
+// $link            : #3D98D3;
+$link            : #3d87ff;
 
 // Status colors
-$success         : #5D995D;
-$warning         : #DAC342;
+// $success         : #5D995D;
+$success         : #2ac73c;
+// $warning         : #DAC342;
+$warning         : #ff9d00;
 $error           : #F64747;
 $info            : #3D98D3;
 

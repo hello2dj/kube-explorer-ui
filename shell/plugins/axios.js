@@ -2,6 +2,7 @@ import https from 'https';
 import { CSRF } from '@shell/config/cookies';
 import { parse as setCookieParser } from 'set-cookie-parser';
 import pkg from '../package.json';
+import { config } from 'process';
 
 export default function({
   $axios, $cookies, isDev, req
@@ -18,6 +19,7 @@ export default function({
 
     if ( config.url.startsWith('/') ) {
       config.baseURL = `${ getBasePath() }`;
+      config.url = "/api/kube" + config.url
     }
 
     if ( process.server ) {
@@ -33,6 +35,7 @@ export default function({
       }
     }
   });
+
 
   if ( process.server ) {
     $axios.onResponse((res) => {
@@ -75,7 +78,7 @@ function getBasePath() {
     return window.__basePath__;
   }
   const baseUrl = document.querySelector('head > base').href;
-  const basePath = `${ baseUrl.slice(0, -('/dashboard/'.length - 1)).replace(window.location.origin, '') }`;
+  const basePath = `${ baseUrl.slice(0, -('/kubeui/'.length - 1)).replace(window.location.origin, '') }`;
 
   window.__basePath__ = basePath;
 

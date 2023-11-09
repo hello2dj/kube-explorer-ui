@@ -140,7 +140,8 @@ export default {
           :to="exploreLink"
           class="cluster-link"
         >
-          {{ t('nav.categories.explore') }}
+          <!-- {{ t('nav.categories.explore') }} -->
+          下一个
         </nuxt-link>
       </div>
       <div

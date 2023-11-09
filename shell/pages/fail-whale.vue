@@ -62,7 +62,7 @@ export default {
           HTTP Error {{ error.status }}: {{ error.statusText }}
         </h1>
         <h1 v-else>
-          Error
+          错误
         </h1>
         <h2
           v-if="error"
@@ -70,7 +70,7 @@ export default {
         >
           {{ displayError }}
         </h2>
-        <p class="mt-20">
+        <!-- <p class="mt-20">
           <a
             :href="home"
             class="btn role-primary"
@@ -89,7 +89,7 @@ export default {
           >
             {{ t('nav.failWhale.reload') }}
           </a>
-        </p>
+        </p> -->
       </div>
     </main>
   </div>
