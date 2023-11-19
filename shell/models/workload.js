@@ -23,23 +23,23 @@ export default class Workload extends WorkloadService {
     let out = super._availableActions;
     const type = this._type ? this._type : this.type;
 
-    const editYaml = findBy(out, 'action', 'goToEditYaml');
-    const index = editYaml ? out.indexOf(editYaml) : 0;
+    // const editYaml = findBy(out, 'action', 'goToEditYaml');
+    // const index = editYaml ? out.indexOf(editYaml) : 0;
 
-    insertAt(out, index, {
-      action:  'addSidecar',
-      label:   this.t('action.addSidecar'),
-      icon:    'icon icon-plus',
-      enabled: !!this.links.update,
-    });
+    // insertAt(out, index, {
+    //   action:  'addSidecar',
+    //   label:   this.t('action.addSidecar'),
+    //   icon:    'icon icon-plus',
+    //   enabled: !!this.links.update,
+    // });
 
     if (type !== WORKLOAD_TYPES.JOB && type !== WORKLOAD_TYPES.CRON_JOB) {
-      insertAt(out, 0, {
-        action:  'toggleRollbackModal',
-        label:   this.t('action.rollback'),
-        icon:    'icon icon-history',
-        enabled: !!this.links.update,
-      });
+      // insertAt(out, 0, {
+      //   action:  'toggleRollbackModal',
+      //   label:   this.t('action.rollback'),
+      //   icon:    'icon icon-history',
+      //   enabled: !!this.links.update,
+      // });
 
       insertAt(out, 0, {
         action:   'redeploy',

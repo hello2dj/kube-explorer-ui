@@ -669,7 +669,6 @@ function onProxyReqWs(proxyReq, req, socket, options, head) {
   proxyReq.setHeader('origin', options.target.href);
   proxyReq.setHeader('x-api-host', req.headers['host']);
   proxyReq.setHeader('x-forwarded-proto', 'https');
-  // console.log(proxyReq.getHeaders());
 
   socket.on('error', (err) => {
     console.error('Proxy WS Error:', err); // eslint-disable-line no-console

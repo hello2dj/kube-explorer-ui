@@ -409,13 +409,14 @@ export default {
       <div class="title">
         <div class="primaryheader">
           <h1>
-            <nuxt-link
+            <!-- <nuxt-link
               v-if="location"
               :to="location"
             >
               {{ parent.displayName }}:
-            </nuxt-link>
-            <span v-else>{{ parent.displayName }}:</span>
+            </nuxt-link> -->
+            <span>{{ parent.displayName }}:</span>
+
             <span v-if="value.detailPageHeaderActionOverride && value.detailPageHeaderActionOverride(realMode)">{{ value.detailPageHeaderActionOverride(realMode) }}</span>
             <t
               v-else
@@ -448,13 +449,13 @@ export default {
           <span v-else-if="isWorkspace">{{ t("resourceDetail.masthead.workspace") }}: <nuxt-link :to="workspaceLocation">{{ namespace }}</nuxt-link></span>
           <span v-else-if="namespace && !hasMultipleNamespaces">
             {{ t("resourceDetail.masthead.namespace") }}:
-            <nuxt-link
+            <!-- <nuxt-link
               v-if="!hideNamespaceLocation"
               :to="namespaceLocation"
             >
               {{ namespace }}
-            </nuxt-link>
-            <span v-else>
+            </nuxt-link> -->
+            <span>
               {{ namespace }}
             </span>
           </span>

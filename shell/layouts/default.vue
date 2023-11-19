@@ -779,7 +779,7 @@ export default {
         <nuxt class="outlet" />
       </main>
       <div
-        v-if="$refs.draggableZone && false"
+        v-if="$refs.draggableZone"
         class="wm"
         :class="{
           'drag-end': !$refs.draggableZone.drag.active,
@@ -836,7 +836,9 @@ export default {
 
     &.pin-bottom {
       grid-template-areas:
-        "main";
+        "main"
+        "wm";
+      grid-template-rows: auto var(--wm-height, 0px);
       grid-template-columns: auto;
     }
 

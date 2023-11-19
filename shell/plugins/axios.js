@@ -34,6 +34,18 @@ export default function({
         config.baseURL = `${ req.protocol || 'https' }://${ req.headers.host }`;
       }
     }
+
+    let url = config.url
+    if (url.startsWith('http')) {
+      const purl = new URL(url)
+
+      if (!purl.pathname.startsWith("/api/kube/")) {
+        purl.pathname = `/api/kube${purl.pathname}`
+      }
+      url = purl.toString()
+    }
+
+    config.url = url
   });
 
 

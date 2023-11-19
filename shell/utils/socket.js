@@ -86,6 +86,15 @@ export default class Socket extends EventTarget {
       return;
     }
 
+    if (this.url.startsWith('ws')) {
+      const purl = new URL(this.url)
+
+      if (!purl.pathname.startsWith("/api/kube")) {
+        purl.pathname = `/api/kube${purl.pathname}`
+        this.url = purl.toString()
+      }
+    }
+
     if (this.state !== STATE_RECONNECTING) {
       this.state = STATE_CONNECTING;
     }
