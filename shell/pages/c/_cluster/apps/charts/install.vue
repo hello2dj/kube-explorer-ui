@@ -1,7 +1,6 @@
 <script>
 import jsyaml from 'js-yaml';
 import merge from 'lodash/merge';
-import isEqual from 'lodash/isEqual';
 import { mapPref, DIFF } from '@shell/store/prefs';
 import { mapFeature, MULTI_CLUSTER, LEGACY } from '@shell/store/features';
 import { mapGetters } from 'vuex';
@@ -23,10 +22,10 @@ import YamlEditor, { EDITOR_MODES } from '@shell/components/YamlEditor';
 import Wizard from '@shell/components/Wizard';
 import TypeDescription from '@shell/components/TypeDescription';
 import ChartMixin from '@shell/mixins/chart';
-import ChildHook, { BEFORE_SAVE_HOOKS, AFTER_SAVE_HOOKS } from '@shell/mixins/child-hook';
-import { CATALOG, MANAGEMENT, DEFAULT_WORKSPACE, CAPI } from '@shell/config/types';
+import ChildHook from '@shell/mixins/child-hook';
+import { MANAGEMENT, DEFAULT_WORKSPACE, CAPI, QY_API } from '@shell/config/types';
 import {
-  CHART, FROM_CLUSTER, FROM_TOOLS, HIDE_SIDE_NAV, NAMESPACE, REPO, REPO_TYPE, VERSION, _FLAGGED
+  CHART, FROM_CLUSTER, HIDE_SIDE_NAV, NAMESPACE, REPO, REPO_TYPE, VERSION, _FLAGGED
 } from '@shell/config/query-params';
 import { CATALOG as CATALOG_ANNOTATIONS, PROJECT } from '@shell/config/labels-annotations';
 
@@ -93,21 +92,13 @@ export default {
     */
     await this.fetchChart();
 
-    await this.fetchAutoInstallInfo();
+    // await this.fetchAutoInstallInfo();
     this.errors = [];
 
-    // If the chart doesn't contain system `systemDefaultRegistry` properties there's no point applying them
-    if (this.showCustomRegistry) {
-      // Note: Cluster scoped registry is only supported for node driver clusters
-      this.clusterRegistry = await this.getClusterRegistry();
-      this.globalRegistry = await this.getGlobalRegistry();
-      this.defaultRegistrySetting = this.clusterRegistry || this.globalRegistry;
-    }
-
-    this.serverUrlSetting = await this.$store.dispatch('management/find', {
-      type: MANAGEMENT.SETTING,
-      id:   'server-url'
-    });
+    // this.serverUrlSetting = await this.$store.dispatch('management/find', {
+    //   type: MANAGEMENT.SETTING,
+    //   id:   'server-url'
+    // });
 
     /*
       Figure out the namespace where the chart is
@@ -137,18 +128,18 @@ export default {
     }
 
     /* Check if the app is deprecated. */
-    this.legacyApp = this.existing ? await this.existing.deployedAsLegacy() : false;
+    this.legacyApp = false;
 
     /* Check if the app is a multicluster deprecated app.
     (Multicluster apps were replaced by Fleet.) */
-    this.mcapp = this.existing ? await this.existing.deployedAsMultiCluster() : false;
+    this.mcapp = false;
 
     /* The form state is intialized as a chartInstallAction resource. */
     this.value = await this.$store.dispatch('cluster/create', {
       type:     'chartInstallAction',
       metadata: {
-        namespace: this.forceNamespace || this.$store.getters['defaultNamespace'],
-        name:      this.existing?.spec?.name || this.query.appName || '',
+        // namespace: this.forceNamespace,
+        name:      this.existing?.spec?.name || this.query.chartName || '',
       }
     });
 
@@ -203,9 +194,9 @@ export default {
 
     /* If no chart by the given app name and namespace
      can be found, or if no version is found, do nothing. */
-    if ( !this.chart || !this.query.versionName) {
-      return;
-    }
+    // if ( !this.chart || !this.query.versionName) {
+    //   return;
+    // }
 
     if ( this.version && process.client ) {
       /*
@@ -287,21 +278,6 @@ export default {
       */
       this.chartValues = merge(merge({}, this.versionInfo?.values || {}), userValues);
 
-      if (this.showCustomRegistry) {
-        /**
-         * The input to configure the registry should never be
-         * shown for third-party charts, which don't have Rancher
-         * global values.
-         */
-        const existingRegistry = this.chartValues?.global?.systemDefaultRegistry || this.chartValues?.global?.cattle?.systemDefaultRegistry;
-
-        delete this.chartValues?.global?.systemDefaultRegistry;
-        delete this.chartValues?.global?.cattle?.systemDefaultRegistry;
-
-        this.customRegistrySetting = existingRegistry || this.defaultRegistrySetting;
-        this.showCustomRegistryInput = !!this.customRegistrySetting;
-      }
-
       /* Serializes an object as a YAML document */
       this.valuesYaml = saferDump(this.chartValues);
 
@@ -343,6 +319,7 @@ export default {
       customRegistrySetting:  '',
       serverUrlSetting:       null,
       chartValues:            null,
+      answers: {},
       clusterRegistry:        '',
       originalYamlValues:     null,
       previousYamlValues:     null,
@@ -508,8 +485,9 @@ export default {
     },
 
     showSelectVersionOrChart() {
+      return false
       // Allow the user to choose a version if the app exists OR they've come from tools
-      return this.existing || (FROM_TOOLS in this.$route.query);
+      // return this.existing || (FROM_TOOLS in this.$route.query);
     },
 
     showNameEditor() {
@@ -695,6 +673,7 @@ export default {
      * exposing a feature that the chart does not have.
      */
     showCustomRegistry() {
+      return false
       const global = this.versionInfo?.values?.global || {};
 
       return global.systemDefaultRegistry !== undefined || global.cattle?.systemDefaultRegistry !== undefined;
@@ -704,10 +683,10 @@ export default {
 
   watch: {
     '$route.query'(neu, old) {
-      if ( !isEqual(neu, old) ) {
+      // if ( !isEqual(neu, old) ) {
         this.$fetch();
         this.showSlideIn = false;
-      }
+      // }
     },
 
     'value.metadata.namespace'(neu, old) {
@@ -919,27 +898,13 @@ export default {
     },
 
     cancel() {
-      if ( this.existing ) {
-        this.done();
-      } else if (this.$route.query[FROM_TOOLS] === _FLAGGED) {
-        this.$router.replace(this.clusterToolsLocation());
-      } else if (this.$route.query[FROM_CLUSTER] === _FLAGGED) {
-        this.$router.replace(this.clustersLocation());
-      } else {
-        this.$router.replace(this.chartLocation(false));
-      }
+      this.done();
     },
 
     done() {
-      if ( this.$route.query[FROM_TOOLS] === _FLAGGED ) {
-        this.$router.replace(this.clusterToolsLocation());
-      } else if (this.$route.query[FROM_CLUSTER] === _FLAGGED) {
-        this.$router.replace(this.clustersLocation());
-      } else {
-        // If the create app process fails helm validation then we still get here... so until this is fixed new apps will be taken to the
-        // generic apps list (existing apps will be taken to their detail page)
-        this.$router.replace(this.appLocation());
-      }
+        window.parent.postMessage(JSON.stringify({
+          success: true,
+        }), '*')
     },
 
     async finish(btnCb) {
@@ -948,7 +913,7 @@ export default {
 
         this.errors = [];
 
-        await this.applyHooks(BEFORE_SAVE_HOOKS);
+        // await this.applyHooks(BEFORE_SAVE_HOOKS);
 
         const { errors, input } = this.actionInput(isUpgrade);
 
@@ -959,31 +924,25 @@ export default {
           return;
         }
 
-        const res = await this.repo.doAction((isUpgrade ? 'upgrade' : 'install'), input);
-        const operationId = `${ res.operationNamespace }/${ res.operationName }`;
-
-        // Non-admins without a cluster won't be able to fetch operations immediately
-        await this.repo.waitForOperation(operationId);
-
-        // Dynamically use store decided when loading catalog (covers standard user case when there's not cluster)
-        this.operation = await this.$store.dispatch(`${ this.inStore }/find`, {
-          type: CATALOG.OPERATION,
-          id:   operationId
-        });
-
-        try {
-          await this.operation.waitForLink('logs');
-          this.operation.openLogs();
-        } catch (e) {
-          // The wait times out eventually, move on...
-        }
-
-        await this.applyHooks(AFTER_SAVE_HOOKS);
+        await this.$axios.post(QY_API.InstallChart, input.charts[0]); 
 
         btnCb(true);
         this.done();
       } catch (err) {
-        this.errors = exceptionToErrorsArray(err);
+        let errmsg;
+        if ( err?.response?.data ) {
+          const res = err.response.data.errors[0]
+          if (res.extensions?.cuase) {
+            errmsg = `${res.message}: ${res.extensions?.cuase}`
+          }
+        } else {
+          errmsg = err.message
+        }
+        window.parent.postMessage(JSON.stringify({
+          success: false,
+          msg: errmsg,
+        }), '*')
+        this.errors = []
         btnCb(false);
       }
     },
@@ -1098,146 +1057,149 @@ export default {
       injects Rancher-specific values into the chart values.
     */
     actionInput(isUpgrade) {
-      /* Default values defined in the Helm chart itself */
-      const fromChart = this.versionInfo?.values || {};
+        /* Default values defined in the Helm chart itself */
+        const fromChart = this.versionInfo?.values || {};
 
-      const errors = [];
+        const errors = [];
 
-      if ( this.showingYaml || this.showingYamlDiff ) {
-        const { errors: yamlErrors } = this.applyYamlToValues();
+        if ( this.showingYaml || this.showingYamlDiff ) {
+          const { errors: yamlErrors } = this.applyYamlToValues();
 
-        errors.push(...yamlErrors);
-      }
-
-      /*
-        Only save the values that differ from the chart's standard values.yaml.
-        chartValues is created by applying the user's customized onto
-        the default chart values.
-      */
-      const values = diff(fromChart, this.chartValues);
-
-      /*
-        Refer to the developer docs at docs/developer/helm-chart-apps.md
-        for details on what values are injected and where they come from.
-      */
-
-      this.addGlobalValuesTo(values);
-
-      const form = JSON.parse(JSON.stringify(this.value));
-
-      /*
-        Migrated annotations are required to allow a deprecated legacy app to be
-        upgraded.
-      */
-      const migratedAnnotations = this.migratedApp ? { [CATALOG_ANNOTATIONS.MIGRATED]: 'true' } : {};
-
-      const chart = {
-        chartName:   this.chart.chartName,
-        version:     this.version?.version || this.query.versionName,
-        releaseName: form.metadata.name,
-        description: this.customCmdOpts.description,
-        annotations: {
-          ...migratedAnnotations,
-          [CATALOG_ANNOTATIONS.SOURCE_REPO_TYPE]: this.chart.repoType,
-          [CATALOG_ANNOTATIONS.SOURCE_REPO_NAME]: this.chart.repoName
-        },
-        values,
-      };
-
-      if ( isUpgrade ) {
-        chart.resetValues = this.cmdOptions.resetValues;
-      }
-
-      /*
-        Configure Helm CLI options for doing the install or
-        upgrade operation.
-      */
-      const out = {
-        charts:    [chart],
-        noHooks:   this.cmdOptions.hooks === false,
-        timeout:   this.cmdOptions.timeout > 0 ? `${ this.cmdOptions.timeout }s` : null,
-        wait:      this.cmdOptions.wait === true,
-        namespace: form.metadata.namespace,
-        projectId: this.project,
-      };
-
-      /*
-        Configure Helm CLI options that are specific to
-        installs or specific to upgrades.
-      */
-      if ( isUpgrade ) {
-        out.force = this.cmdOptions.force === true;
-        out.historyMax = this.cmdOptions.historyMax;
-        out.cleanupOnFail = this.cmdOptions.cleanupOnFail;
-      } else {
-        out.disableOpenAPIValidation = this.cmdOptions.openApi === false;
-        out.skipCRDs = this.cmdOptions.crds === false;
-      }
-
-      const more = [];
-
-      const auto = (this.version?.annotations?.[CATALOG_ANNOTATIONS.AUTO_INSTALL_GVK] || '').split(/\s*,\s*/).filter((x) => !!x).reverse();
-
-      for ( const gvr of auto ) {
-        const provider = this.$store.getters['catalog/versionProviding']({
-          gvr,
-          repoName: this.chart.repoName,
-          repoType: this.chart.repoType
-        });
-
-        if ( provider ) {
-          more.push(provider);
-        } else {
-          errors.push(`This chart requires another chart that provides ${ gvr }, but none was was found`);
+          errors.push(...yamlErrors);
         }
-      }
 
-      /* Chart custom UI components have the ability to edit CRD chart values eg gatekeeper-crd has values.enableRuntimeDefaultSeccompProfile
-        like the main chart, only CRD values that differ from defaults should be sent on install/upgrade
-        CRDs should be installed with the same global values as the main chart
-      */
-      for (const versionInfo of this.autoInstallInfo) {
-        // allValues are the values potentially changed in the installation ui: any previously customized values + defaults
-        // values are default values from the chart
-        const { allValues, values: crdValues } = versionInfo;
+        /*
+          Only save the values that differ from the chart's standard values.yaml.
+          chartValues is created by applying the user's customized onto
+          the default chart values.
+        */
+        const values = diff(fromChart, this.chartValues);
 
-        // only save crd values that differ from the defaults defined in chart values.yaml
-        const customizedCrdValues = diff(crdValues, allValues);
+        /*
+          Refer to the developer docs at docs/developer/helm-chart-apps.md
+          for details on what values are injected and where they come from.
+        */
 
-        // CRD globals should be overwritten by main chart globals
-        // we want to avoid including globals present on crd values and not main chart values
-        // that covers the scenario where a global value was customized on a previous install (and so is present in crd global vals) and the user has reverted it to default on this update (no longer present in main chart global vals)
-        const crdValuesToInstall = { ...customizedCrdValues, global: values.global };
+        // this.addGlobalValuesTo(values);
 
-        out.charts.unshift({
-          chartName:   versionInfo.chart.name,
-          version:     versionInfo.chart.version,
-          releaseName: versionInfo.chart.annotations[CATALOG_ANNOTATIONS.RELEASE_NAME] || chart.name,
-          projectId:   this.project,
-          values:      crdValuesToInstall
-        });
-      }
-      /*
-        'more' contains additional
-        charts that may not be CRD charts but are also meant to be installed at
-        the same time.
-      */
-      for ( const dependency of more ) {
-        out.charts.unshift({
-          chartName:   dependency.name,
-          version:     dependency.version,
-          releaseName: dependency.annotations[CATALOG_ANNOTATIONS.RELEASE_NAME] || dependency.name,
-          projectId:   this.project,
-          values:      this.addGlobalValuesTo({ global: values.global }),
+        const form = JSON.parse(JSON.stringify(this.value));
+
+        /*
+          Migrated annotations are required to allow a deprecated legacy app to be
+          upgraded.
+        */
+        const migratedAnnotations = this.migratedApp ? { [CATALOG_ANNOTATIONS.MIGRATED]: 'true' } : {};
+
+        const chart = {
+          appId: parseInt(this.query.appId),
+          namespace: form.metadata.namespace,
+          chartName:   this.chart.chartName,
+          answers: JSON.parse(JSON.stringify(this.answers)),
+          version:     this.version?.version || this.query.versionName,
+          releaseName: form.metadata.name,
+          descripition: this.customCmdOpts.description,
           annotations: {
             ...migratedAnnotations,
-            [CATALOG_ANNOTATIONS.SOURCE_REPO_TYPE]: dependency.repoType,
-            [CATALOG_ANNOTATIONS.SOURCE_REPO_NAME]: dependency.repoName
+            [CATALOG_ANNOTATIONS.SOURCE_REPO_TYPE]: this.chart.repoType,
+            [CATALOG_ANNOTATIONS.SOURCE_REPO_NAME]: this.chart.repoName
           },
-        });
-      }
+          values,
+        };
 
-      return { errors, input: out };
+        if ( isUpgrade ) {
+          chart.resetValues = this.cmdOptions.resetValues;
+        }
+
+        /*
+          Configure Helm CLI options for doing the install or
+          upgrade operation.
+        */
+        const out = {
+          charts:    [chart],
+          noHooks:   this.cmdOptions.hooks === false,
+          timeout:   this.cmdOptions.timeout > 0 ? `${ this.cmdOptions.timeout }s` : null,
+          wait:      this.cmdOptions.wait === true,
+          namespace: form.metadata.namespace,
+          projectId: this.project,
+        };
+
+        /*
+          Configure Helm CLI options that are specific to
+          installs or specific to upgrades.
+        */
+        if ( isUpgrade ) {
+          out.force = this.cmdOptions.force === true;
+          out.historyMax = this.cmdOptions.historyMax;
+          out.cleanupOnFail = this.cmdOptions.cleanupOnFail;
+        } else {
+          out.disableOpenAPIValidation = this.cmdOptions.openApi === false;
+          out.skipCRDs = this.cmdOptions.crds === false;
+        }
+
+        const more = [];
+
+        const auto = (this.version?.annotations?.[CATALOG_ANNOTATIONS.AUTO_INSTALL_GVK] || '').split(/\s*,\s*/).filter((x) => !!x).reverse();
+
+        for ( const gvr of auto ) {
+          const provider = this.$store.getters['catalog/versionProviding']({
+            gvr,
+            repoName: this.chart.repoName,
+            repoType: this.chart.repoType
+          });
+
+          if ( provider ) {
+            more.push(provider);
+          } else {
+            errors.push(`This chart requires another chart that provides ${ gvr }, but none was was found`);
+          }
+        }
+
+        /* Chart custom UI components have the ability to edit CRD chart values eg gatekeeper-crd has values.enableRuntimeDefaultSeccompProfile
+          like the main chart, only CRD values that differ from defaults should be sent on install/upgrade
+          CRDs should be installed with the same global values as the main chart
+        */
+        for (const versionInfo of this.autoInstallInfo) {
+          // allValues are the values potentially changed in the installation ui: any previously customized values + defaults
+          // values are default values from the chart
+          const { allValues, values: crdValues } = versionInfo;
+
+          // only save crd values that differ from the defaults defined in chart values.yaml
+          const customizedCrdValues = diff(crdValues, allValues);
+
+          // CRD globals should be overwritten by main chart globals
+          // we want to avoid including globals present on crd values and not main chart values
+          // that covers the scenario where a global value was customized on a previous install (and so is present in crd global vals) and the user has reverted it to default on this update (no longer present in main chart global vals)
+          const crdValuesToInstall = { ...customizedCrdValues, global: values.global };
+
+          out.charts.unshift({
+            chartName:   versionInfo.chart.name,
+            version:     versionInfo.chart.version,
+            releaseName: versionInfo.chart.annotations[CATALOG_ANNOTATIONS.RELEASE_NAME] || chart.name,
+            projectId:   this.project,
+            values:      crdValuesToInstall
+          });
+        }
+        /*
+          'more' contains additional
+          charts that may not be CRD charts but are also meant to be installed at
+          the same time.
+        */
+        for ( const dependency of more ) {
+          out.charts.unshift({
+            chartName:   dependency.name,
+            version:     dependency.version,
+            releaseName: dependency.annotations[CATALOG_ANNOTATIONS.RELEASE_NAME] || dependency.name,
+            projectId:   this.project,
+            values:      this.addGlobalValuesTo({ global: values.global }),
+            annotations: {
+              ...migratedAnnotations,
+              [CATALOG_ANNOTATIONS.SOURCE_REPO_TYPE]: dependency.repoType,
+              [CATALOG_ANNOTATIONS.SOURCE_REPO_NAME]: dependency.repoName
+            },
+          });
+        }
+
+        return { errors, input: out };
     },
 
     tabChanged() {
@@ -1284,13 +1246,12 @@ export default {
 </script>
 
 <template>
-  <Loading v-if="$fetchState.pending" />
+  <!-- <Loading v-if="$fetchState.pending" /> -->
   <div
-    v-else-if="!legacyApp && !mcapp"
     class="install-steps pt-20"
     :class="{ 'isPlainLayout': isPlainLayout}"
   >
-    <TypeDescription resource="chart" />
+    <!-- <TypeDescription resource="chart" /> -->
     <Wizard
       v-if="value"
       :steps="steps"
@@ -1301,7 +1262,6 @@ export default {
       :finish-mode="action"
       class="wizard"
       :class="{'windowsIncompatible': windowsIncompatible}"
-      @cancel="cancel"
       @finish="finish"
     >
       <template
@@ -1434,11 +1394,11 @@ export default {
               />
             </template>
           </NameNsDescription>
-          <Checkbox
+          <!-- <Checkbox
             v-model="showCommandStep"
             class="mb-20"
             :label="t('catalog.install.steps.helmCli.checkbox', { action, existing: !!existing })"
-          />
+          /> -->
 
           <Checkbox
             v-if="showCustomRegistry"
@@ -1548,54 +1508,9 @@ export default {
 
         <div class="scroll__container">
           <div class="scroll__content">
-            <!-- Values (as Custom Component in ./shell/charts/) -->
-            <template v-if="valuesComponent && showValuesComponent">
-              <Tabbed
-                v-if="componentHasTabs"
-                ref="tabs"
-                :side-tabs="true"
-                :class="{'with-name': showNameEditor}"
-                class="step__values__content"
-                @changed="tabChanged($event)"
-              >
-                <component
-                  :is="valuesComponent"
-                  v-model="chartValues"
-                  :mode="mode"
-                  :chart="chart"
-                  class="step__values__content"
-                  :existing="existing"
-                  :version="version"
-                  :version-info="versionInfo"
-                  :auto-install-info="autoInstallInfo"
-                  @warn="e=>errors.push(e)"
-                  @register-before-hook="registerBeforeHook"
-                  @register-after-hook="registerAfterHook"
-                  @valid="updateStepTwoReady($event)"
-                />
-              </Tabbed>
-              <template v-else>
-                <component
-                  :is="valuesComponent"
-                  v-if="valuesComponent"
-                  v-model="chartValues"
-                  :mode="mode"
-                  :chart="chart"
-                  class="step__values__content"
-                  :existing="existing"
-                  :version="version"
-                  :version-info="versionInfo"
-                  :auto-install-info="autoInstallInfo"
-                  @warn="e=>errors.push(e)"
-                  @register-before-hook="registerBeforeHook"
-                  @register-after-hook="registerAfterHook"
-                />
-              </template>
-            </template>
-
             <!-- Values (as Questions, abstracted component based on question.yaml configuration from repositories)  -->
             <Tabbed
-              v-else-if="hasQuestions && showQuestions"
+              v-if="hasQuestions && showQuestions"
               ref="tabs"
               :side-tabs="true"
               :class="{'with-name': showNameEditor}"
@@ -1604,6 +1519,7 @@ export default {
             >
               <Questions
                 v-model="chartValues"
+                :answers="answers"
                 :in-store="inStore"
                 :mode="mode"
                 :source="versionInfo"
@@ -1628,13 +1544,13 @@ export default {
         </div>
 
         <!-- Confirm loss of changes on toggle from yaml/preview to form -->
-        <ResourceCancelModal
+        <!-- <ResourceCancelModal
           ref="cancelModal"
           :is-cancel-modal="false"
           :is-form="true"
           @cancel-cancel="preFormYamlOption=formYamlOption"
           @confirm-cancel="formYamlOption = preFormYamlOption;"
-        />
+        /> -->
       </template>
       <template #helmCli>
         <Banner
@@ -1724,6 +1640,9 @@ export default {
           />
         </div>
       </template>
+      <template #cancel>
+        <span></span>
+      </template>
     </Wizard>
     <div
       class="slideIn"
@@ -1756,63 +1675,6 @@ export default {
   </div>
 
   <!-- App is deployed as a Legacy or MultiCluster app, don't let user update from here -->
-  <div
-    v-else
-    class="install-steps"
-    :class="{ 'isPlainLayout': isPlainLayout}"
-  >
-    <div class="outer-container">
-      <div class="header mb-20">
-        <div class="title">
-          <div class="top choice-banner">
-            <div class="title">
-              <!-- Logo -->
-              <slot name="bannerTitleImage">
-                <div class="round-image">
-                  <LazyImage
-                    :src="chart ? chart.icon : ''"
-                    class="logo"
-                  />
-                </div>
-              </slot>
-              <!-- Title with subtext -->
-              <div class="subtitle">
-                <h2 v-if="stepperName">
-                  {{ stepperName }}
-                </h2>
-                <span
-                  v-if="stepperSubtext"
-                  class="subtext"
-                >{{ stepperSubtext }}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      <Banner
-        color="warning"
-        class="description"
-      >
-        <span v-if="!mcapp">
-          {{ t('catalog.install.error.legacy.label', { legacyType: mcapp ? legacyDefs.mcm : legacyDefs.legacy }, true) }}
-        </span>
-        <template v-if="!legacyEnabled">
-          <span v-clean-html="t('catalog.install.error.legacy.enableLegacy.prompt', true)" />
-          <nuxt-link :to="legacyFeatureRoute">
-            {{ t('catalog.install.error.legacy.enableLegacy.goto') }}
-          </nuxt-link>
-        </template>
-        <template v-else-if="mcapp">
-          <span v-clean-html="t('catalog.install.error.legacy.mcmNotSupported')" />
-        </template>
-        <template v-else>
-          <nuxt-link :to="legacyAppRoute">
-            <span v-clean-html="t('catalog.install.error.legacy.navigate')" />
-          </nuxt-link>
-        </template>
-      </Banner>
-    </div>
-  </div>
 </template>
 
 <style lang="scss" scoped>

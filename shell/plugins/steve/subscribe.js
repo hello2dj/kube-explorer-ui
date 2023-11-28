@@ -349,7 +349,7 @@ const sharedActions = {
     state.debugSocket && console.info(`Subscribe [${ getters.storeName }]`); // eslint-disable-line no-console
 
     // const url = `${ state.config.baseUrl }/subscribe`;
-    const url = '/api/kube' + `${ state.config.baseUrl.startsWith('/') ? `${ getBasePath() }${ state.config.baseUrl }` : state.config.baseUrl }/subscribe`;
+    const url = '/api/kube/rancher' + `${ state.config.baseUrl.startsWith('/') ? `${ getBasePath() }${ state.config.baseUrl }` : state.config.baseUrl }/subscribe`;
     const maxTries = growlsDisabled(rootGetters) ? null : 3;
     const metadata = get(opt, 'metadata');
 

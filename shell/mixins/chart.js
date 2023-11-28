@@ -10,7 +10,7 @@ import { NAME as EXPLORER } from '@shell/config/product/explorer';
 import { NAME as MANAGER } from '@shell/config/product/manager';
 
 import { formatSi, parseSi } from '@shell/utils/units';
-import { CAPI, CATALOG } from '@shell/config/types';
+import { CAPI, CATALOG, QY_API } from '@shell/config/types';
 import { isPrerelease } from '@shell/utils/version';
 import difference from 'lodash/difference';
 import { LINUX } from '@shell/store/catalog';
@@ -35,16 +35,11 @@ export default {
     showPreRelease: mapPref(SHOW_PRE_RELEASE),
 
     chart() {
-      if ( this.repo && this.query.chartName ) {
-        return this.$store.getters['catalog/chart']({
-          repoType:      this.query.repoType,
-          repoName:      this.query.repoName,
-          chartName:     this.query.chartName,
-          includeHidden: true,
-        });
-      }
-
-      return null;
+        return {
+            versions: [],
+            chartVersion: this.query.chartVersion,
+            chartName: this.query.chartName,
+        }
     },
 
     repo() {
@@ -135,7 +130,10 @@ export default {
         versionName:  query[VERSION],
         appNamespace: query[NAMESPACE] || '',
         appName:      query[NAME] || '',
-        description:  query[DESCRIPTION_QUERY]
+        description:  query[DESCRIPTION_QUERY],
+        appId: query["appId"],
+        chartName: query["chartName"],
+        chartVersion: query["chartVersion"]
       };
     },
 
@@ -244,46 +242,21 @@ export default {
 
   methods: {
     async fetchChart() {
-      await this.$store.dispatch('catalog/load', { force: true, reset: true }); // not the problem
-
-      if ( this.query.appNamespace && this.query.appName ) {
-        // First check the URL query for an app name and namespace.
-        // Use those values to check for a catalog app resource.
-        // If found, set the form to edit mode. If not, set the
-        // form to create mode.
-
-        try {
-          this.existing = await this.$store.dispatch('cluster/find', {
-            type: CATALOG.APP,
-            id:   `${ this.query.appNamespace }/${ this.query.appName }`,
-          });
-
-          this.mode = _EDIT;
-        } catch (e) {
-          this.mode = _CREATE;
-          this.existing = null;
+      try {
+        const response = await this.$axios.get(QY_API.GetLatestInstalledForRancer, {
+          params: {
+            appId: this.query.appId
+          }
+        });
+        this.existing = response.data
+        this.mode = _EDIT;
+        
+        if (!response.data) {
+          this.mode = _CREATE
         }
-      } else if ( this.chart?.targetNamespace && this.chart?.targetName ) {
-        // If the app name and namespace values are not provided in the
-        // query, fall back on target values defined in the Helm chart itself.
-
-        // Ask to install a special chart with fixed namespace/name
-        // or edit it if there's an existing install.
-
-        try {
-          this.existing = await this.$store.dispatch('cluster/find', {
-            type: CATALOG.APP,
-            id:   `${ this.chart.targetNamespace }/${ this.chart.targetName }`,
-          });
-          this.mode = _EDIT;
-        } catch (e) {
-          this.mode = _CREATE;
-          this.existing = null;
-        }
-      } else {
-        // Regular create
-
+      } catch(e) {
         this.mode = _CREATE;
+        this.existing = null;
       }
 
       if ( !this.chart ) {
@@ -303,17 +276,11 @@ export default {
         }
       }
 
-      if ( !this.query.versionName ) {
-        return;
-      }
-
       try {
-        this.version = this.$store.getters['catalog/version']({
-          repoType:    this.query.repoType,
-          repoName:    this.query.repoName,
-          chartName:   this.query.chartName,
-          versionName: this.query.versionName
-        });
+        this.version = {
+          key: this.chart.name + this.chart.chartVersion,
+          version: this.chart.chartVersion,
+        }
       } catch (e) {
         console.error('Unable to fetch Version: ', e); // eslint-disable-line no-console
       }
@@ -322,12 +289,12 @@ export default {
       }
 
       try {
-        this.versionInfo = await this.$store.dispatch('catalog/getVersionInfo', {
-          repoType:    this.query.repoType,
-          repoName:    this.query.repoName,
-          chartName:   this.query.chartName,
-          versionName: this.query.versionName
-        });
+        const response = await this.$axios.get(QY_API.GetChartVersionInfoForRancher, {
+          params: {
+            appId: this.query.appId
+          }
+        }); 
+        this.versionInfo = response.data
         // Here we set us versionInfo. The returned
         // object contains everything all info
         // about a currently installed app, and it has the

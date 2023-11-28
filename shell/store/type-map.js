@@ -1294,6 +1294,9 @@ export const getters = {
     }
 
     return state.products.filter((p) => {
+      if (p.name === "apps") {
+        return true
+      }
       const module = p.inStore;
 
       if ( p['public'] === false && !isDev ) {

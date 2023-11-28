@@ -500,7 +500,7 @@ export default {
           :table-actions="false"
         />
       </Tab>
-      <Tab
+      <!-- <Tab
         v-if="!isJob && !isCronJob"
         name="ingresses"
         :label="t('workload.detail.ingresses')"
@@ -540,7 +540,7 @@ export default {
           :search="false"
           :table-actions="false"
         />
-      </Tab>
+      </Tab> -->
     </ResourceTabs>
   </div>
 </template>

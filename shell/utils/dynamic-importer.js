@@ -85,7 +85,7 @@ export function loadProduct(name) {
 
 export function listProducts() {
   const ctx = require.context('@shell/config/product', true, /.*/);
-  const excludedProducts = ['apps']; // for kube-explorer
+  const excludedProducts = []; // for kube-explorer
   const products = ctx.keys().filter(path => !path.endsWith('.js')).map(path => path.substr(2))
     .filter(p => !excludedProducts.includes(p)); // for kube-explorer
 

@@ -89,8 +89,8 @@ export default class Socket extends EventTarget {
     if (this.url.startsWith('ws')) {
       const purl = new URL(this.url)
 
-      if (!purl.pathname.startsWith("/api/kube")) {
-        purl.pathname = `/api/kube${purl.pathname}`
+      if (!purl.pathname.startsWith('/api/kube')) {
+        purl.pathname = `/api/kube/rancher${purl.pathname}`
         this.url = purl.toString()
       }
     }

@@ -157,7 +157,7 @@ export default class Pod extends WorkloadService {
     if ( this.spec.nodeName ) {
       out.push({
         label:         'Node',
-        formatter:     'LinkName',
+        // formatter:     'LinkName',
         formatterOpts: { type: NODE, value: this.spec.nodeName },
         content:       this.spec.nodeName,
       });

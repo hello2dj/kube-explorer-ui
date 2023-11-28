@@ -120,7 +120,10 @@ export default {
       type:     Object,
       required: true,
     },
-
+    answers: {
+      type: Object,
+      required: true,
+    },
     tabbed: {
       type:    [Boolean, String],
       default: true,
@@ -275,6 +278,7 @@ export default {
 
     update(variable, $event) {
       set(this.value, variable, $event);
+      set(this.answers, variable, $event);
       if (this.emit) {
         this.$emit('updated');
       }

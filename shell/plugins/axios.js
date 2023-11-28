@@ -17,9 +17,9 @@ export default function({
       config.headers['x-api-csrf'] = csrf;
     }
 
-    if ( config.url.startsWith('/') ) {
+    if ( config.url.startsWith('/') && !config.url.startsWith('/api/kube')) {
       config.baseURL = `${ getBasePath() }`;
-      config.url = "/api/kube" + config.url
+      config.url = '/api/kube/rancher' + config.url
     }
 
     if ( process.server ) {
@@ -39,8 +39,8 @@ export default function({
     if (url.startsWith('http')) {
       const purl = new URL(url)
 
-      if (!purl.pathname.startsWith("/api/kube/")) {
-        purl.pathname = `/api/kube${purl.pathname}`
+      if (!purl.pathname.startsWith('/api/kube')) {
+        purl.pathname = `/api/kube/rancher${purl.pathname}`
       }
       url = purl.toString()
     }

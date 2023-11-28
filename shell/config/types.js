@@ -311,3 +311,9 @@ export const AUTH_TYPE = {
   _SSH:   '_ssh',
   _S3:    '_S3'
 };
+
+export const QY_API = {
+  GetLatestInstalledForRancer: "/api/kube/qy/chart/installed/latest",
+  GetChartVersionInfoForRancher: "/api/kube/qy/chart/version/latest",
+  InstallChart: "/api/kube/qy/chart"
+}

@@ -276,26 +276,27 @@ module.exports = function(dir, _appConfig) {
   console.log(`API: '${ api }'. Env: '${ rancherEnv }'`); // eslint-disable-line no-console
   const proxy = {
     ...appConfig.proxies,
-    '/api/kube/k8s':            proxyWsOpts(api), // Straight to a remote cluster (/k8s/clusters/<id>/)
-    '/api/kube/pp':             proxyWsOpts(api), // For (epinio) standalone API
-    '/api/kube/api':            proxyWsOpts(api), // Management k8s API
-    '/api/kube/apis':           proxyWsOpts(api), // Management k8s API
-    '/api/kube/v1':             proxyWsOpts(api), // Management Steve API
-    '/api/kube/v3':             proxyWsOpts(api), // Rancher API
-    '/api/kube/v3-public':      proxyOpts(api), // Rancher Unauthed API
-    '/api/kube/api-ui':         proxyOpts(api), // Browser API UI
-    '/api/kube/meta':           proxyMetaOpts(api), // Browser API UI
-    '/api/kube/v1-*':           proxyOpts(api), // SAML, KDM, etc
-    '/api/kube/rancherversion': proxyPrimeOpts(api), // Rancher version endpoint
+    '/api/kube/qy':                     proxyWsOpts(api),
+    '/api/kube/rancher/k8s':            proxyWsOpts(api), // Straight to a remote cluster (/k8s/clusters/<id>/)
+    '/api/kube/rancher/pp':             proxyWsOpts(api), // For (epinio) standalone API
+    '/api/kube/rancher/api':            proxyWsOpts(api), // Management k8s API
+    '/api/kube/rancher/apis':           proxyWsOpts(api), // Management k8s API
+    '/api/kube/rancher/v1':             proxyWsOpts(api), // Management Steve API
+    '/api/kube/rancher/v3':             proxyWsOpts(api), // Rancher API
+    '/api/kube/rancher/v3-public':      proxyOpts(api), // Rancher Unauthed API
+    '/api/kube/rancher/api-ui':         proxyOpts(api), // Browser API UI
+    '/api/kube/rancher/meta':           proxyMetaOpts(api), // Browser API UI
+    '/api/kube/rancher/v1-*':           proxyOpts(api), // SAML, KDM, etc
+    '/api/kube/rancher/rancherversion': proxyPrimeOpts(api), // Rancher version endpoint
     // These are for Ember embedding
-    'api/kube/c/*/edit':       proxyOpts('https://127.0.0.1:8000'), // Can't proxy all of /c because that's used by Vue too
-    'api/kube/k/':             proxyOpts('https://127.0.0.1:8000'),
-    'api/kube/g/':             proxyOpts('https://127.0.0.1:8000'),
-    'api/kube/n/':             proxyOpts('https://127.0.0.1:8000'),
-    'api/kube/p/':             proxyOpts('https://127.0.0.1:8000'),
-    'api/kube/assets':         proxyOpts('https://127.0.0.1:8000'),
-    'api/kube/translations':   proxyOpts('https://127.0.0.1:8000'),
-    'api/kube/engines-dist':   proxyOpts('https://127.0.0.1:8000'),
+    'api/kube/rancher/c/*/edit':       proxyOpts('https://127.0.0.1:8000'), // Can't proxy all of /c because that's used by Vue too
+    'api/kube/rancher/k/':             proxyOpts('https://127.0.0.1:8000'),
+    'api/kube/rancher/g/':             proxyOpts('https://127.0.0.1:8000'),
+    'api/kube/rancher/n/':             proxyOpts('https://127.0.0.1:8000'),
+    'api/kube/rancher/p/':             proxyOpts('https://127.0.0.1:8000'),
+    'api/kube/rancher/assets':         proxyOpts('https://127.0.0.1:8000'),
+    'api/kube/rancher/translations':   proxyOpts('https://127.0.0.1:8000'),
+    'api/kube/rancher/engines-dist':   proxyOpts('https://127.0.0.1:8000'),
   };
 
   const config = {
