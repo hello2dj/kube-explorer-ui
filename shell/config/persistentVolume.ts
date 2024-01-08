@@ -2,17 +2,17 @@ export const VOLUME_PLUGINS = [
   {
     labelKey:  'persistentVolume.awsElasticBlockStore.label',
     value:     'awsElasticBlockStore',
-    supported: true
+    supported: false
   },
   {
     labelKey:  'persistentVolume.azureDisk.label',
     value:     'azureDisk',
-    supported: true
+    supported: false
   },
   {
     labelKey:  'persistentVolume.azureFile.label',
     value:     'azureFile',
-    supported: true
+    supported: false
   },
   {
     labelKey: 'persistentVolume.cephfs.label',
@@ -46,7 +46,7 @@ export const VOLUME_PLUGINS = [
   {
     labelKey:  'persistentVolume.gcePersistentDisk.label',
     value:     'gcePersistentDisk',
-    supported: true
+    supported: false
   },
   {
     labelKey:  'persistentVolume.hostPath.label',
@@ -65,12 +65,12 @@ export const VOLUME_PLUGINS = [
   {
     labelKey:  'persistentVolume.longhorn.label',
     value:     'longhorn',
-    supported: true
+    supported: false
   },
   {
     labelKey:  'persistentVolume.nfs.label',
     value:     'nfs',
-    supported: true
+    supported: false
   },
   {
     labelKey: 'persistentVolume.cinder.label',
@@ -101,7 +101,7 @@ export const VOLUME_PLUGINS = [
   {
     labelKey:  'persistentVolume.vsphereVolume.label',
     value:     'vsphereVolume',
-    supported: true
+    supported: false
   },
 ];
 

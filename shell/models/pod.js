@@ -143,20 +143,24 @@ export default class Pod extends WorkloadService {
 
     if ( this.workloadRef ) {
       out.push({
-        label:         'Workload',
+        label:         this.t('workload.detailTop.workload'),
         formatter:     'LinkName',
+        // replicaset 自动转到 deployment
         formatterOpts: {
-          value:     this.workloadRef.name,
-          type:      this.workloadRef.type,
+          // value:     this.workloadRef.name,
+          value: this.workloadRef.type === 'apps.replicaset' ? this.metadata.labels['app.kubernetes.io/name'] : this.workloadRef.name,
+          // type:      this.workloadRef.type,
+          type:      this.workloadRef.type === 'apps.replicaset' ? 'apps.deployment' : this.workloadRef.type,
           namespace: this.workloadRef.namespace
         },
-        content: this.workloadRef.name
+        // content: this.workloadRef.name
+        content: this.workloadRef.type === 'apps.replicaset' ? this.metadata.labels['app.kubernetes.io/name'] : this.workloadRef.name,
       });
     }
 
     if ( this.spec.nodeName ) {
       out.push({
-        label:         'Node',
+        label:         this.t('workload.detailTop.node'),
         // formatter:     'LinkName',
         formatterOpts: { type: NODE, value: this.spec.nodeName },
         content:       this.spec.nodeName,

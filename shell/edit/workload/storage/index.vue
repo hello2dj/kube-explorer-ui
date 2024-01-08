@@ -78,7 +78,7 @@ export default {
      * Generated list of volumes
      */
     volumeTypeOptions() {
-      const excludedFiles = ['index', 'Mount', 'PVC', 'ContainerMountPaths'];
+      // const excludedFiles = ['index', 'Mount', 'PVC', 'ContainerMountPaths'];
       const defaultVolumeTypes = [
         'csi',
         'configMap',
@@ -86,14 +86,14 @@ export default {
         'persistentVolumeClaim'
       ];
       // Get all the custom volume types from the file names of this folder
-      const customVolumeTypes = require
-        .context('@shell/edit/workload/storage', false, /^.*\.vue$/)
-        .keys()
-        .map((path) => path.replace(/(\.\/)|(.vue)/g, ''))
-        .filter((file) => !excludedFiles.includes(file));
+      // const customVolumeTypes = require
+      //   .context('@shell/edit/workload/storage', false, /^.*\.vue$/)
+      //   .keys()
+      //   .map((path) => path.replace(/(\.\/)|(.vue)/g, ''))
+      //   .filter((file) => !excludedFiles.includes(file));
 
       return [
-        ...customVolumeTypes,
+        // ...customVolumeTypes,
         ...defaultVolumeTypes
       ]
         .sort()

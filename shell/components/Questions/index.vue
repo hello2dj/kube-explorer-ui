@@ -71,7 +71,7 @@ function migrate(expr) {
   } else if ( expr.includes('&&') ) {
     out = expr.split('&&').map((x) => migrate(x)).join(' && ');
   } else {
-    const parts = expr.match(/^(.*)(!?=)(.*)$/);
+    const parts = expr.match(/^(.*?)(!?=)(.*)$/);
 
     if ( parts ) {
       const key = parts[1].trim();
@@ -300,7 +300,7 @@ export default {
 
         return out;
       } catch (err) {
-        console.error('Error evaluating expression:', expr, values); // eslint-disable-line no-console
+        console.error('Error evaluating expression:', expr, values, err); // eslint-disable-line no-console
 
         return true;
       }
@@ -431,42 +431,16 @@ export default {
 </script>
 
 <template>
-  <form v-if="asTabs">
-    <Tab
-      v-for="g in groups"
-      :key="g.name"
-      :name="g.name"
-      :label="g.name"
-      :weight="g.weight"
-    >
-      <div
-        v-for="q in g.questions"
-        :key="q.variable"
-        class="row question"
-      >
-        <div class="col span-12">
-          <component
-            :is="componentForQuestion(q)"
-            :in-store="inStore"
-            :question="q"
-            :target-namespace="targetNamespace"
-            :value="get(value, q.variable)"
-            :disabled="disabled"
-            :chart-name="chartName"
-            @input="update(q.variable, $event)"
-          />
-        </div>
-      </div>
-    </Tab>
-  </form>
-  <form v-else>
+  <form class="non-tabbed"> 
     <div
       v-for="g in groups"
       :key="g.name"
     >
-      <h3 v-if="groups.length > 1">
-        {{ g.label }}
-      </h3>
+      <div class="non-tabbed-label">
+        <span v-if="groups.length > 1" >
+          {{ g.name }}
+        </span>
+      </div>
       <div
         v-for="q in g.questions"
         :key="q.variable"
@@ -479,7 +453,7 @@ export default {
             :question="q"
             :target-namespace="targetNamespace"
             :mode="mode"
-            :value="get(value, q.variable)"
+            :value="get(value, q.variable, q)"
             :disabled="disabled"
             :chart-name="chartName"
             @input="update(q.variable, $event)"
@@ -496,6 +470,39 @@ export default {
 
     &:first-child {
       margin-top: 0;
+    }
+  }
+
+  .non-tabbed {
+    &:first-child{
+      margin-top: -50px;
+    }
+  }
+  .non-tabbed-label {
+    margin-top: 50px;
+    margin-bottom: 30px;
+    text-align: center;
+    overflow: hidden;
+
+    span {
+      position: relative;
+    }
+
+    span::before {
+      right: 100%;
+      margin-right: 15px;
+    }
+    span::after {
+      left: 100%;
+      margin-left: 15px;
+    }
+    span::before, span::after {
+      content: "";
+      position: absolute;
+      top: 50%;
+      width: 9999px;
+      height: 1px;
+      background: #ecf0f1;
     }
   }
 </style>

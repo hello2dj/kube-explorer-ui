@@ -122,12 +122,14 @@ export default {
 
     query() {
       const query = this.$route.query;
-
       return {
         repoType:     query[REPO_TYPE],
         repoName:     query[REPO],
         chartName:    query[CHART],
         versionName:  query[VERSION],
+        fromRepo: query['fromRepo'] === 'true',
+        chartDir: query['chartDir'],
+        workspaceId: query['workspaceId'],
         appNamespace: query[NAMESPACE] || '',
         appName:      query[NAME] || '',
         description:  query[DESCRIPTION_QUERY],
@@ -291,7 +293,12 @@ export default {
       try {
         const response = await this.$axios.get(QY_API.GetChartVersionInfoForRancher, {
           params: {
-            appId: this.query.appId
+            fromRepo: this.query.fromRepo,
+            appId: this.query.appId,
+            chartDir: this.query.chartDir,
+            chartName: this.query.chartName,
+            chartVersion: this.query.chartVersion,
+            repoName: this.query.repoName,
           }
         }); 
         this.versionInfo = response.data

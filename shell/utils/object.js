@@ -23,9 +23,9 @@ export function set(obj, path, value) {
   for (let i = 0; i < parts.length; i++) {
     const key = parts[i];
 
-    if ( i === parts.length - 1 ) {
+    if (i === parts.length - 1) {
       Vue.set(ptr, key, value);
-    } else if ( !ptr[key] ) {
+    } else if (!ptr[key]) {
       // Make sure parent keys exist
       Vue.set(ptr, key, {});
     }
@@ -55,11 +55,40 @@ export function getAllValues(obj, path) {
   return currentValue.filter((val) => val !== null);
 }
 
-export function get(obj, path) {
-  if ( !path) {
+export function get(obj, path, q) {
+  let value = _get(obj, path)
+
+  if (!q) {
+    return value
+  }
+
+  if (q?.type === 'boolean') {
+    console.log(" !!!! before", path, typeof(value), q)
+    if (value === 'true') {
+      value = true
+    } else if (value === 'false') {
+      value = false
+    } else {
+      value = !!value
+    }
+    console.log(" !!!! after", path, typeof(value), q)
+  }
+
+  if (q?.type === 'int') {
+    if (_.isString(value)) {
+      value = parseInt(value)
+    }
+  }
+
+  set(obj, path, value)
+  return value
+}
+
+export function _get(obj, path) {
+  if (!path) {
     throw new Error('Cannot translate an empty input. The t function requires a string.');
   }
-  if ( path.startsWith('$') ) {
+  if (path.startsWith('$')) {
     try {
       return JSONPath({
         path,
@@ -73,7 +102,7 @@ export function get(obj, path) {
     }
   }
 
-  if ( !path.includes('.') ) {
+  if (!path.includes('.')) {
     return obj?.[path];
   }
 
@@ -96,7 +125,7 @@ export function remove(obj, path) {
 
   const parent = get(obj, joinObjectPath(parentAry));
 
-  if ( parent ) {
+  if (parent) {
     Vue.set(parent, leafKey, undefined);
     delete parent[leafKey];
   }
@@ -105,7 +134,7 @@ export function remove(obj, path) {
 }
 
 export function getter(path) {
-  return function(obj) {
+  return function (obj) {
     return get(obj, path);
   };
 }
@@ -115,7 +144,7 @@ export function clone(obj) {
 }
 
 export function isEmpty(obj) {
-  if ( !obj ) {
+  if (!obj) {
     return true;
   }
 
@@ -145,7 +174,7 @@ export function cleanUp(obj) {
   Object.keys(obj).map((key) => {
     const val = obj[key];
 
-    if ( Array.isArray(val) ) {
+    if (Array.isArray(val)) {
       obj[key] = val.map((each) => {
         if (each !== null && each !== undefined) {
           return cleanUp(each);
@@ -156,7 +185,7 @@ export function cleanUp(obj) {
       }
     } else if (typeof val === 'undefined' || val === null) {
       delete obj[key];
-    } else if ( isObject(val) ) {
+    } else if (isObject(val)) {
       if (isEmpty(val)) {
         delete obj[key];
       }
@@ -171,10 +200,10 @@ export function definedKeys(obj) {
   const keys = Object.keys(obj).map((key) => {
     const val = obj[key];
 
-    if ( Array.isArray(val) ) {
+    if (Array.isArray(val)) {
       return key;
-    } else if ( isObject(val) ) {
-      return ( definedKeys(val) || [] ).map((subkey) => `${ key }.${ subkey }`);
+    } else if (isObject(val)) {
+      return (definedKeys(val) || []).map((subkey) => `${key}.${subkey}`);
     } else {
       return key;
     }
@@ -191,14 +220,14 @@ export function diff(from, to) {
   const out = transform(to, (res, toVal, k) => {
     const fromVal = from[k];
 
-    if ( isEqual(toVal, fromVal) ) {
+    if (isEqual(toVal, fromVal)) {
       return;
     }
 
-    if ( Array.isArray(toVal) || Array.isArray(fromVal) ) {
+    if (Array.isArray(toVal) || Array.isArray(fromVal)) {
       // Don't diff arrays, just use the whole value
       res[k] = toVal;
-    } else if ( isObject(toVal) && isObject(from[k]) ) {
+    } else if (isObject(toVal) && isObject(from[k])) {
       res[k] = diff(fromVal, toVal);
     } else {
       res[k] = toVal;
@@ -211,7 +240,7 @@ export function diff(from, to) {
   // Return keys that are in 'from' but not 'to.'
   const missing = difference(fromKeys, toKeys);
 
-  for ( const k of missing ) {
+  for (const k of missing) {
     set(out, k, null);
   }
 
@@ -248,26 +277,26 @@ export { isEqualBasic as isEqual };
 export function changeset(from, to, parentPath = []) {
   let out = {};
 
-  if ( isEqual(from, to) ) {
+  if (isEqual(from, to)) {
     return out;
   }
 
-  for ( const k in from ) {
+  for (const k in from) {
     const path = joinObjectPath([...parentPath, k]);
 
-    if ( !(k in to) ) {
+    if (!(k in to)) {
       out[path] = { op: 'remove', path };
-    } else if ( (isObject(from[k]) && isObject(to[k])) || (isArray(from[k]) && isArray(to[k])) ) {
+    } else if ((isObject(from[k]) && isObject(to[k])) || (isArray(from[k]) && isArray(to[k]))) {
       out = { ...out, ...changeset(from[k], to[k], [...parentPath, k]) };
-    } else if ( !isEqual(from[k], to[k]) ) {
+    } else if (!isEqual(from[k], to[k])) {
       out[path] = {
         op: 'change', from: from[k], value: to[k]
       };
     }
   }
 
-  for ( const k in to ) {
-    if ( !(k in from) ) {
+  for (const k in to) {
+    if (!(k in from)) {
       const path = joinObjectPath([...parentPath, k]);
 
       out[path] = { op: 'add', value: to[k] };
@@ -282,14 +311,14 @@ export function changesetConflicts(a, b) {
   const out = [];
   const seen = {};
 
-  for ( const k of keys ) {
+  for (const k of keys) {
     let ok = true;
     const aa = a[k];
     const bb = b[k];
 
     // If we've seen a change for a parent of this key before (e.g. looking at `spec.replicas` and there's already been a change to `spec`), assume they conflict
-    for ( const parentKey of parentKeys(k) ) {
-      if ( seen[parentKey] ) {
+    for (const parentKey of parentKeys(k)) {
+      if (seen[parentKey]) {
         ok = false;
         break;
       }
@@ -297,41 +326,41 @@ export function changesetConflicts(a, b) {
 
     seen[k] = true;
 
-    if ( ok && bb ) {
-      switch ( `${ aa.op }-${ bb.op }` ) {
-      case 'add-add':
-      case 'add-change':
-      case 'change-add':
-      case 'change-change':
-        ok = isEqual(aa.value, bb.value);
-        break;
+    if (ok && bb) {
+      switch (`${aa.op}-${bb.op}`) {
+        case 'add-add':
+        case 'add-change':
+        case 'change-add':
+        case 'change-change':
+          ok = isEqual(aa.value, bb.value);
+          break;
 
-      case 'add-remove':
-      case 'change-remove':
-      case 'remove-add':
-      case 'remove-change':
-        ok = false;
-        break;
+        case 'add-remove':
+        case 'change-remove':
+        case 'remove-add':
+        case 'remove-change':
+          ok = false;
+          break;
 
-      case 'remove-remove':
-      default:
-        ok = true;
-        break;
+        case 'remove-remove':
+        default:
+          ok = true;
+          break;
       }
     }
 
-    if ( !ok ) {
+    if (!ok) {
       addObject(out, k);
     }
   }
 
   // Check parent keys going the other way
   keys = Object.keys(b).sort();
-  for ( const k of keys ) {
+  for (const k of keys) {
     let ok = true;
 
-    for ( const parentKey of parentKeys(k) ) {
-      if ( seen[parentKey] ) {
+    for (const parentKey of parentKeys(k)) {
+      if (seen[parentKey]) {
         ok = false;
         break;
       }
@@ -339,7 +368,7 @@ export function changesetConflicts(a, b) {
 
     seen[k] = true;
 
-    if ( !ok ) {
+    if (!ok) {
       addObject(out, k);
     }
   }
@@ -352,7 +381,7 @@ export function changesetConflicts(a, b) {
 
     parts.pop();
 
-    while ( parts.length ) {
+    while (parts.length) {
       const path = joinObjectPath(parts);
 
       out.push(path);
@@ -366,15 +395,15 @@ export function changesetConflicts(a, b) {
 export function applyChangeset(obj, changeset) {
   let entry;
 
-  for ( const path in changeset ) {
+  for (const path in changeset) {
     entry = changeset[path];
 
-    if ( entry.op === 'add' || entry.op === 'change' ) {
+    if (entry.op === 'add' || entry.op === 'change') {
       set(obj, path, entry.value);
-    } else if ( entry.op === 'remove' ) {
+    } else if (entry.op === 'remove') {
       remove(obj, path);
     } else {
-      throw new Error(`Unknown operation:${ entry.op }`);
+      throw new Error(`Unknown operation:${entry.op}`);
     }
   }
 

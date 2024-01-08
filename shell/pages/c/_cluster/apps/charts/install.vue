@@ -31,7 +31,7 @@ import { CATALOG as CATALOG_ANNOTATIONS, PROJECT } from '@shell/config/labels-an
 
 import { exceptionToErrorsArray } from '@shell/utils/error';
 import { clone, diff, get, set } from '@shell/utils/object';
-import { ignoreVariables } from './install.helpers';
+import { ignoreVariables, collectQuestionsErrors, getDefaultNamespaceAndName } from './install.helpers';
 import { findBy, insertAt } from '@shell/utils/array';
 import Vue from 'vue';
 import { saferDump } from '@shell/utils/create-yaml';
@@ -90,6 +90,7 @@ export default {
       it checks for target name and namespace values defined in the
       Helm chart itself.
     */
+
     await this.fetchChart();
 
     // await this.fetchAutoInstallInfo();
@@ -167,6 +168,15 @@ export default {
       if ( this.query.description ) {
         this.customCmdOpts.description = this.query.description;
       }
+
+      const res = getDefaultNamespaceAndName(this.versionInfo)
+      if (res.namespace) {
+        this.value.metadata.namespace = res.namespace
+      }
+      if (res.name) {
+        this.value.metadata.name = res.name
+      }
+
     } /* End of logic for when chart is already installed */
 
     /*
@@ -174,23 +184,23 @@ export default {
       the Helm chart for the first time and a default
       namespace has been set.
     */
-    if (this.forceNamespace && !this.existing) {
-      let ns;
+    // if (this.forceNamespace && !this.existing) {
+    //   let ns;
 
-      /*
-        Before moving forward, check to make sure the
-        default namespace exists and the logged-in user
-        has permission to see it.
-      */
-      try {
-        ns = await this.$store.dispatch('cluster/find', { type: NAMESPACE, id: this.forceNamespace });
-        const project = ns.metadata.annotations?.[PROJECT];
+    //   /*
+    //     Before moving forward, check to make sure the
+    //     default namespace exists and the logged-in user
+    //     has permission to see it.
+    //   */
+    //   try {
+    //     ns = await this.$store.dispatch('cluster/find', { type: NAMESPACE, id: this.forceNamespace });
+    //     const project = ns.metadata.annotations?.[PROJECT];
 
-        if (project) {
-          this.project = project.replace(':', '/');
-        }
-      } catch {}
-    }
+    //     if (project) {
+    //       this.project = project.replace(':', '/');
+    //     }
+    //   } catch {}
+    // }
 
     /* If no chart by the given app name and namespace
      can be found, or if no version is found, do nothing. */
@@ -913,14 +923,14 @@ export default {
 
         this.errors = [];
 
-        // await this.applyHooks(BEFORE_SAVE_HOOKS);
-
         const { errors, input } = this.actionInput(isUpgrade);
-
         if ( errors?.length ) {
-          this.errors = errors;
-          btnCb(false);
+          window.parent.postMessage(JSON.stringify({
+            success: false,
+            msg: errors.join('\n'),
+          }), '*')
 
+          btnCb(false);
           return;
         }
 
@@ -932,8 +942,10 @@ export default {
         let errmsg;
         if ( err?.response?.data ) {
           const res = err.response.data.errors[0]
-          if (res.extensions?.cuase) {
-            errmsg = `${res.message}: ${res.extensions?.cuase}`
+          if (res.extensions?.cause) {
+            errmsg = `${res.message}: ${res.extensions?.cause}`
+          } else {
+            errmsg = res.message
           }
         } else {
           errmsg = err.message
@@ -1057,10 +1069,7 @@ export default {
       injects Rancher-specific values into the chart values.
     */
     actionInput(isUpgrade) {
-        /* Default values defined in the Helm chart itself */
-        const fromChart = this.versionInfo?.values || {};
-
-        const errors = [];
+        let errors = [];
 
         if ( this.showingYaml || this.showingYamlDiff ) {
           const { errors: yamlErrors } = this.applyYamlToValues();
@@ -1073,8 +1082,13 @@ export default {
           chartValues is created by applying the user's customized onto
           the default chart values.
         */
-        const values = diff(fromChart, this.chartValues);
+        errors = collectQuestionsErrors(this.ignoreVariables, this.versionInfo, this.chartValues)
+        if (errors.length) {
+          return { errors }
+        }
 
+
+        const values = JSON.parse(JSON.stringify(this.chartValues));
         /*
           Refer to the developer docs at docs/developer/helm-chart-apps.md
           for details on what values are injected and where they come from.
@@ -1090,14 +1104,35 @@ export default {
         */
         const migratedAnnotations = this.migratedApp ? { [CATALOG_ANNOTATIONS.MIGRATED]: 'true' } : {};
 
+        // Name string `json:"name"`
+        // // k8s namespace
+        // Namespace   string `json:"namespace"`
+        // WorkspaceID uint   `json:"workspaceID"`
+        // AppID       uint   `json:"appId"`
+
+        // // local app
+        // Values  map[string]interface{} `json:"values"`
+        // Answers map[string]interface{} `json:"answers"`
+
+        // // helm repo
+        // RepoName     string   `json:"repoName"`
+        // ChartVersion string   `json:"chartVersion"`
+        // ChartName    string   `json:"chartName"`
+        // ChartDir     string   `json:"dir"`
+        // ChartURLs    []string `json:"chartUrls"`
+
         const chart = {
           appId: parseInt(this.query.appId),
+          workspaceId: parseInt(this.query.workspaceId),
           namespace: form.metadata.namespace,
           chartName:   this.chart.chartName,
+          chartVersion: this.chart.chartVersion,
+          chartDir: this.query.chartDir,
+          repoName: this.query.repoName,
           answers: JSON.parse(JSON.stringify(this.answers)),
-          version:     this.version?.version || this.query.versionName,
           releaseName: form.metadata.name,
           descripition: this.customCmdOpts.description,
+          upgrade: isUpgrade,
           annotations: {
             ...migratedAnnotations,
             [CATALOG_ANNOTATIONS.SOURCE_REPO_TYPE]: this.chart.repoType,
@@ -1134,69 +1169,6 @@ export default {
         } else {
           out.disableOpenAPIValidation = this.cmdOptions.openApi === false;
           out.skipCRDs = this.cmdOptions.crds === false;
-        }
-
-        const more = [];
-
-        const auto = (this.version?.annotations?.[CATALOG_ANNOTATIONS.AUTO_INSTALL_GVK] || '').split(/\s*,\s*/).filter((x) => !!x).reverse();
-
-        for ( const gvr of auto ) {
-          const provider = this.$store.getters['catalog/versionProviding']({
-            gvr,
-            repoName: this.chart.repoName,
-            repoType: this.chart.repoType
-          });
-
-          if ( provider ) {
-            more.push(provider);
-          } else {
-            errors.push(`This chart requires another chart that provides ${ gvr }, but none was was found`);
-          }
-        }
-
-        /* Chart custom UI components have the ability to edit CRD chart values eg gatekeeper-crd has values.enableRuntimeDefaultSeccompProfile
-          like the main chart, only CRD values that differ from defaults should be sent on install/upgrade
-          CRDs should be installed with the same global values as the main chart
-        */
-        for (const versionInfo of this.autoInstallInfo) {
-          // allValues are the values potentially changed in the installation ui: any previously customized values + defaults
-          // values are default values from the chart
-          const { allValues, values: crdValues } = versionInfo;
-
-          // only save crd values that differ from the defaults defined in chart values.yaml
-          const customizedCrdValues = diff(crdValues, allValues);
-
-          // CRD globals should be overwritten by main chart globals
-          // we want to avoid including globals present on crd values and not main chart values
-          // that covers the scenario where a global value was customized on a previous install (and so is present in crd global vals) and the user has reverted it to default on this update (no longer present in main chart global vals)
-          const crdValuesToInstall = { ...customizedCrdValues, global: values.global };
-
-          out.charts.unshift({
-            chartName:   versionInfo.chart.name,
-            version:     versionInfo.chart.version,
-            releaseName: versionInfo.chart.annotations[CATALOG_ANNOTATIONS.RELEASE_NAME] || chart.name,
-            projectId:   this.project,
-            values:      crdValuesToInstall
-          });
-        }
-        /*
-          'more' contains additional
-          charts that may not be CRD charts but are also meant to be installed at
-          the same time.
-        */
-        for ( const dependency of more ) {
-          out.charts.unshift({
-            chartName:   dependency.name,
-            version:     dependency.version,
-            releaseName: dependency.annotations[CATALOG_ANNOTATIONS.RELEASE_NAME] || dependency.name,
-            projectId:   this.project,
-            values:      this.addGlobalValuesTo({ global: values.global }),
-            annotations: {
-              ...migratedAnnotations,
-              [CATALOG_ANNOTATIONS.SOURCE_REPO_TYPE]: dependency.repoType,
-              [CATALOG_ANNOTATIONS.SOURCE_REPO_NAME]: dependency.repoName
-            },
-          });
         }
 
         return { errors, input: out };
@@ -1509,25 +1481,17 @@ export default {
         <div class="scroll__container">
           <div class="scroll__content">
             <!-- Values (as Questions, abstracted component based on question.yaml configuration from repositories)  -->
-            <Tabbed
+            <Questions
               v-if="hasQuestions && showQuestions"
-              ref="tabs"
-              :side-tabs="true"
-              :class="{'with-name': showNameEditor}"
-              class="step__values__content"
-              @changed="tabChanged($event)"
-            >
-              <Questions
-                v-model="chartValues"
-                :answers="answers"
-                :in-store="inStore"
-                :mode="mode"
-                :source="versionInfo"
-                :ignore-variables="ignoreVariables"
-                tabbed="multiple"
-                :target-namespace="targetNamespace"
-              />
-            </Tabbed>
+              v-model="chartValues"
+              :answers="answers"
+              :in-store="inStore"
+              :mode="mode"
+              :source="versionInfo"
+              :ignore-variables="ignoreVariables"
+              :tabbed="'multiple'"
+              :target-namespace="targetNamespace"
+            />
             <!-- Values (as YAML) -->
             <template v-else>
               <YamlEditor

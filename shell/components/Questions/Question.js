@@ -1,4 +1,5 @@
 import { _EDIT } from '@shell/config/query-params';
+import _ from 'lodash';
 
 export default {
   props: {
