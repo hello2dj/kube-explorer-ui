@@ -62,8 +62,11 @@ export function get(obj, path, q) {
     return value
   }
 
+  if (typeof(value) === "undefined") {
+    value = q.default
+  }
+
   if (q?.type === 'boolean') {
-    console.log(" !!!! before", path, typeof(value), q)
     if (value === 'true') {
       value = true
     } else if (value === 'false') {
@@ -71,7 +74,6 @@ export function get(obj, path, q) {
     } else {
       value = !!value
     }
-    console.log(" !!!! after", path, typeof(value), q)
   }
 
   if (q?.type === 'int') {
