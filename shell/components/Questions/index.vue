@@ -15,33 +15,33 @@ import ReferenceType from './Reference';
 import CloudCredentialType from './CloudCredential';
 
 export const knownTypes = {
-  string:          StringType,
-  hostname:        StringType, // @TODO
-  multiline:       StringType,
-  password:        StringType,
-  boolean:         BooleanType,
-  enum:            EnumType,
-  int:             IntType,
-  float:           FloatType,
-  questionMap:     MapType,
-  reference:       ReferenceType,
-  configmap:       ReferenceType,
-  secret:          ReferenceType,
-  storageclass:    ReferenceType,
-  pvc:             ReferenceType,
+  string: StringType,
+  hostname: StringType, // @TODO
+  multiline: StringType,
+  password: StringType,
+  boolean: BooleanType,
+  enum: EnumType,
+  int: IntType,
+  float: FloatType,
+  questionMap: MapType,
+  reference: ReferenceType,
+  configmap: ReferenceType,
+  secret: ReferenceType,
+  storageclass: ReferenceType,
+  pvc: ReferenceType,
   cloudcredential: CloudCredentialType,
 };
 
 export function componentForQuestion(q) {
   const type = (q.type || '').toLowerCase();
 
-  if ( knownTypes[type] ) {
+  if (knownTypes[type]) {
     return type;
-  } else if ( type.startsWith('array[') ) { // This only really works for array[string|multiline], but close enough for now.
+  } else if (type.startsWith('array[')) { // This only really works for array[string|multiline], but close enough for now.
     return ArrayType;
-  } else if ( type.startsWith('map[') ) { // Same, only works with map[string|multiline]
+  } else if (type.startsWith('map[')) { // Same, only works with map[string|multiline]
     return MapType;
-  } else if ( type.startsWith('reference[') ) { // Same, only works with map[string|multiline]
+  } else if (type.startsWith('reference[')) { // Same, only works with map[string|multiline]
     return ReferenceType;
   }
 
@@ -52,10 +52,10 @@ export function schemaToQuestions(fields) {
   const keys = Object.keys(fields);
   const out = [];
 
-  for ( const k of keys ) {
+  for (const k of keys) {
     out.push({
       variable: k,
-      label:    k,
+      label: k,
       ...fields[k],
     });
   }
@@ -66,30 +66,30 @@ export function schemaToQuestions(fields) {
 function migrate(expr) {
   let out;
 
-  if ( expr.includes('||') ) {
+  if (expr.includes('||')) {
     out = expr.split('||').map((x) => migrate(x)).join(' || ');
-  } else if ( expr.includes('&&') ) {
+  } else if (expr.includes('&&')) {
     out = expr.split('&&').map((x) => migrate(x)).join(' && ');
   } else {
     const parts = expr.match(/^(.*?)(!?=)(.*)$/);
 
-    if ( parts ) {
+    if (parts) {
       const key = parts[1].trim();
       const op = parts[2].trim() === '!=' ? '!=' : '==';
       const val = parts[3].trim();
 
-      if ( val === 'true' || val === 'false' || val === 'null' ) {
-        out = `${ key } ${ op } ${ val }`;
-      } else if ( val === '' ) {
+      if (val === 'true' || val === 'false' || val === 'null') {
+        out = `${key} ${op} ${val}`;
+      } else if (val === '') {
         // Existing charts expect `foo=` with `{foo: null}` to be true.
-        if ( op === '!=' ) {
-          out = `!!${ key }`;
+        if (op === '!=') {
+          out = `!!${key}`;
         } else {
-          out = `!${ key }`;
+          out = `!${key}`;
         }
         // out = `${ op === '!' ? '!' : '' }(${ key } == "" || ${ key } == null)`;
       } else {
-        out = `${ key } ${ op } "${ val }"`;
+        out = `${key} ${op} "${val}"`;
       }
     } else {
       try {
@@ -112,12 +112,12 @@ export default {
 
   props: {
     mode: {
-      type:    String,
+      type: String,
       default: _EDIT,
     },
 
     value: {
-      type:     Object,
+      type: Object,
       required: true,
     },
     answers: {
@@ -125,53 +125,53 @@ export default {
       required: true,
     },
     tabbed: {
-      type:    [Boolean, String],
+      type: [Boolean, String],
       default: true,
     },
 
     // Can be a chartVersion, resource Schema, or an Array of question objects
     source: {
-      type:     [Object, Array],
+      type: [Object, Array],
       required: true,
     },
 
     targetNamespace: {
-      type:     String,
+      type: String,
       required: true
     },
 
     ignoreVariables: {
-      type:    Array,
+      type: Array,
       default: () => [],
     },
 
     disabled: {
-      type:    Boolean,
+      type: Boolean,
       default: false,
     },
 
     inStore: {
-      type:    String,
+      type: String,
       default: 'cluster'
     },
 
     emit: {
-      type:    Boolean,
+      type: Boolean,
       default: false,
     }
   },
 
   data() {
-    return { valueGeneration: 0 };
+    return { valueGeneration: 0, initialized: false };
   },
 
   computed: {
     allQuestions() {
-      if ( this.source.questions?.questions ) {
+      if (this.source.questions?.questions) {
         return this.source.questions.questions;
-      } else if ( this.source.type === 'schema' && this.source.resourceFields ) {
+      } else if (this.source.type === 'schema' && this.source.resourceFields) {
         return schemaToQuestions(this.source.resourceFields);
-      } else if ( typeof this.source === 'object' ) {
+      } else if (typeof this.source === 'object') {
         return schemaToQuestions(this.source);
       } else {
         return [];
@@ -182,15 +182,15 @@ export default {
       const values = this.value;
       const vm = this;
 
-      if ( this.valueGeneration < 0 ) {
+      if (this.valueGeneration < 0) {
         // Pointless condition to get this to depend on generation and recompute
         return;
       }
 
       const out = [];
 
-      for ( const q of this.allQuestions ) {
-        if ( this.ignoreVariables.includes(q.variable) ) {
+      for (const q of this.allQuestions) {
+        if (this.ignoreVariables.includes(q.variable)) {
           continue;
         }
 
@@ -200,7 +200,7 @@ export default {
       return out;
 
       function addQuestion(q, depth = 1, parentGroup) {
-        if ( !vm.shouldShow(q, values) ) {
+        if (!vm.shouldShow(q, values)) {
           return;
         }
 
@@ -209,8 +209,8 @@ export default {
 
         out.push(q);
 
-        if ( q.subquestions?.length && vm.shouldShowSub(q, values) ) {
-          for ( const sub of q.subquestions ) {
+        if (q.subquestions?.length && vm.shouldShowSub(q, values)) {
+          for (const sub of q.subquestions) {
             addQuestion(sub, depth + 1, q.group);
           }
         }
@@ -226,17 +226,17 @@ export default {
       const defaultGroup = 'Questions';
       let weight = this.shownQuestions.length;
 
-      for ( const q of this.shownQuestions ) {
+      for (const q of this.shownQuestions) {
         const group = q.group || defaultGroup;
 
         const normalized = group.trim().toLowerCase();
-        const name = this.$store.getters['i18n/withFallback'](`charts.${ this.chartName }.group.${ camelCase(group) }`, null, group);
+        const name = this.$store.getters['i18n/withFallback'](`charts.${this.chartName}.group.${camelCase(group)}`, null, group);
 
-        if ( !map[normalized] ) {
+        if (!map[normalized]) {
           map[normalized] = {
             name,
             questions: [],
-            weight:    weight--,
+            weight: weight--,
           };
         }
 
@@ -244,16 +244,20 @@ export default {
       }
 
       const out = Object.values(map);
+      if (!this.initialized) {
+        this.setDefault(out)
+        this.initialized = true
+      }
 
       return sortBy(out, 'weight:desc');
     },
 
     asTabs() {
-      if ( this.tabbed === false || this.tabbed === 'never' ) {
+      if (this.tabbed === false || this.tabbed === 'never') {
         return false;
       }
 
-      if ( this.tabbed === 'multiple' ) {
+      if (this.tabbed === 'multiple') {
         return this.groups.length > 1;
       }
 
@@ -306,7 +310,7 @@ export default {
       }
     },
     evaluate(question, allQuestions) {
-      if ( !question.show_if ) {
+      if (!question.show_if) {
         return true;
       }
       const and = question.show_if.split('&&');
@@ -314,7 +318,7 @@ export default {
 
       let result;
 
-      if ( get(or, 'length') > 1 ) {
+      if (get(or, 'length') > 1) {
         result = or.some((showIf) => this.calExpression(showIf, allQuestions));
       } else {
         result = and.every((showIf) => this.calExpression(showIf, allQuestions));
@@ -323,7 +327,7 @@ export default {
       return result;
     },
     calExpression(showIf, allQuestions) {
-      if ( showIf.includes('!=')) {
+      if (showIf.includes('!=')) {
         return this.isNotEqual(showIf, allQuestions);
       } else {
         return this.isEqual(showIf, allQuestions);
@@ -333,7 +337,7 @@ export default {
       showIf = showIf.trim();
       const variables = this.getVariables(showIf, '=');
 
-      if ( variables ) {
+      if (variables) {
         const left = this.stringifyAnswer(this.getAnswer(variables.left, allQuestions));
         const right = this.stringifyAnswer(variables.right);
 
@@ -346,7 +350,7 @@ export default {
       showIf = showIf.trim();
       const variables = this.getVariables(showIf, '!=');
 
-      if ( variables ) {
+      if (variables) {
         const left = this.stringifyAnswer(this.getAnswer(variables.left, allQuestions));
         const right = this.stringifyAnswer(variables.right);
 
@@ -356,12 +360,12 @@ export default {
       return false;
     },
     getVariables(showIf, operator) {
-      if ( showIf.includes(operator)) {
+      if (showIf.includes(operator)) {
         const array = showIf.split(operator);
 
-        if ( array.length === 2 ) {
+        if (array.length === 2) {
           return {
-            left:  array[0],
+            left: array[0],
             right: array[1]
           };
         } else {
@@ -374,7 +378,7 @@ export default {
     getAnswer(variable, questions) {
       const found = questions.find((q) => q.variable === variable);
 
-      if ( found ) {
+      if (found) {
         // Equivalent to finding question.answer in Ember
         return get(this.value, found.variable);
       } else {
@@ -382,22 +386,22 @@ export default {
       }
     },
     stringifyAnswer(answer) {
-      if ( answer === undefined || answer === null ) {
+      if (answer === undefined || answer === null) {
         return '';
-      } else if ( typeof answer === 'string' ) {
+      } else if (typeof answer === 'string') {
         return answer;
       } else {
-        return `${ answer }`;
+        return `${answer}`;
       }
     },
     shouldShow(q, values) {
       let expr = q.if;
 
-      if ( expr === undefined && q.show_if !== undefined ) {
+      if (expr === undefined && q.show_if !== undefined) {
         expr = migrate(q.show_if);
       }
 
-      if ( expr ) {
+      if (expr) {
         const shown = !!this.evalExpr(expr, values, q, this.allQuestions);
 
         return shown;
@@ -407,57 +411,67 @@ export default {
     },
     shouldShowSub(q, values) {
       // Sigh, both singular and plural are used in the wild...
-      let expr = ( q.subquestions_if === undefined ? q.subquestion_if : q.subquestions_if);
-      const old = ( q.show_subquestions_if === undefined ? q.show_subquestion_if : q.show_subquestions_if);
+      let expr = (q.subquestions_if === undefined ? q.subquestion_if : q.subquestions_if);
+      const old = (q.show_subquestions_if === undefined ? q.show_subquestion_if : q.show_subquestions_if);
 
-      if ( !expr && old !== undefined ) {
-        if ( old === false || old === 'false' ) {
-          expr = `!${ q.variable }`;
-        } else if ( old === true || old === 'true' ) {
-          expr = `!!${ q.variable }`;
+      if (!expr && old !== undefined) {
+        if (old === false || old === 'false') {
+          expr = `!${q.variable}`;
+        } else if (old === true || old === 'true') {
+          expr = `!!${q.variable}`;
         } else {
-          expr = `${ q.variable } == "${ old }"`;
+          expr = `${q.variable} == "${old}"`;
         }
       }
 
-      if ( expr ) {
+      if (expr) {
         return this.evalExpr(expr, values, q, this.allQuestions);
       }
 
       return true;
+    },
+    setDefault(groups) {
+      groups.forEach(g => {
+        g.questions.forEach(q => {
+          if (q && !(_.isUndefined(q.default) || _.isNull(q.default))) {
+            let value = q.default
+            if (q.type === 'boolean') {
+              if (q.default === 'true') {
+                value = true
+              } else if (q.default === 'false') {
+                value = false
+              } else {
+                value = !!q.default
+              }
+            }
+
+            if (q?.type === 'int') {
+              if (_.isString(q.default)) {
+                value = parseInt(q.default)
+              }
+            }
+            set(this.value, q.variable, value)
+          }
+        })
+      })
     }
   },
 };
 </script>
 
 <template>
-  <form class="non-tabbed"> 
-    <div
-      v-for="g in groups"
-      :key="g.name"
-    >
+  <form class="non-tabbed">
+    <div v-for="g in groups" :key="g.name">
       <div class="non-tabbed-label">
-        <span v-if="groups.length > 1" >
+        <span v-if="groups.length > 1">
           {{ g.name }}
         </span>
       </div>
-      <div
-        v-for="q in g.questions"
-        :key="q.variable"
-        class="row question"
-      >
+      <div v-for="q in g.questions" :key="q.variable" class="row question">
         <div class="col span-12">
-          <component
-            :is="componentForQuestion(q)"
-            :in-store="inStore"
-            :question="q"
-            :target-namespace="targetNamespace"
-            :mode="mode"
-            :value="get(value, q.variable, q)"
-            :disabled="disabled"
-            :chart-name="chartName"
-            @input="update(q.variable, $event)"
-          />
+          <component :is="componentForQuestion(q)" :in-store="inStore" :question="q" :target-namespace="targetNamespace"
+            :mode="mode" :value="get(value, q.variable, q)" :disabled="disabled" :chart-name="chartName"
+            @input="update(q.variable, $event)" />
         </div>
       </div>
     </div>
@@ -465,44 +479,48 @@ export default {
 </template>
 
 <style lang="scss" scoped>
-  .question {
-    margin-top: 10px;
+.question {
+  margin-top: 10px;
 
-    &:first-child {
-      margin-top: 0;
-    }
+  &:first-child {
+    margin-top: 0;
+  }
+}
+
+.non-tabbed {
+  &:first-child {
+    margin-top: -50px;
+  }
+}
+
+.non-tabbed-label {
+  margin-top: 50px;
+  margin-bottom: 30px;
+  text-align: center;
+  overflow: hidden;
+
+  span {
+    position: relative;
   }
 
-  .non-tabbed {
-    &:first-child{
-      margin-top: -50px;
-    }
+  span::before {
+    right: 100%;
+    margin-right: 15px;
   }
-  .non-tabbed-label {
-    margin-top: 50px;
-    margin-bottom: 30px;
-    text-align: center;
-    overflow: hidden;
 
-    span {
-      position: relative;
-    }
-
-    span::before {
-      right: 100%;
-      margin-right: 15px;
-    }
-    span::after {
-      left: 100%;
-      margin-left: 15px;
-    }
-    span::before, span::after {
-      content: "";
-      position: absolute;
-      top: 50%;
-      width: 9999px;
-      height: 1px;
-      background: #ecf0f1;
-    }
+  span::after {
+    left: 100%;
+    margin-left: 15px;
   }
+
+  span::before,
+  span::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    width: 9999px;
+    height: 1px;
+    background: #ecf0f1;
+  }
+}
 </style>

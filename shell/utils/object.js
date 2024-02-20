@@ -1,6 +1,8 @@
 import cloneDeep from 'lodash/cloneDeep';
 import flattenDeep from 'lodash/flattenDeep';
 import compact from 'lodash/compact';
+import isUndefined from 'lodash/isUndefined';
+import isNull from 'lodash/isNull';
 import { JSONPath } from 'jsonpath-plus';
 import Vue from 'vue';
 import transform from 'lodash/transform';
@@ -56,34 +58,7 @@ export function getAllValues(obj, path) {
 }
 
 export function get(obj, path, q) {
-  let value = _get(obj, path)
-
-  if (!q) {
-    return value
-  }
-
-  if (typeof(value) === "undefined") {
-    value = q.default
-  }
-
-  if (q?.type === 'boolean') {
-    if (value === 'true') {
-      value = true
-    } else if (value === 'false') {
-      value = false
-    } else {
-      value = !!value
-    }
-  }
-
-  if (q?.type === 'int') {
-    if (_.isString(value)) {
-      value = parseInt(value)
-    }
-  }
-
-  set(obj, path, value)
-  return value
+  return _get(obj, path)
 }
 
 export function _get(obj, path) {

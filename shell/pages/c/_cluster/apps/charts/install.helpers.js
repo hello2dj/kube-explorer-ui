@@ -204,6 +204,28 @@ function shouldShow(q, values, allQuestions) {
   return true;
 }
 
+const shouldShowSub = (q, values, allQuestions) => {
+    // Sigh, both singular and plural are used in the wild...
+    let expr = (q.subquestions_if === undefined ? q.subquestion_if : q.subquestions_if);
+    const old = (q.show_subquestions_if === undefined ? q.show_subquestion_if : q.show_subquestions_if);
+
+    if (!expr && old !== undefined) {
+      if (old === false || old === 'false') {
+        expr = `!${q.variable}`;
+      } else if (old === true || old === 'true') {
+        expr = `!!${q.variable}`;
+      } else {
+        expr = `${q.variable} == "${old}"`;
+      }
+    }
+
+    if (expr) {
+      return evalExpr(expr, values, q, allQuestions);
+    }
+
+    return true;
+  }
+
 const allShowedQuestions = (ignoreVariables, values, versionInfo) => {
   let out = []
   for (const q of versionInfo.questions?.questions) {
@@ -217,6 +239,9 @@ const allShowedQuestions = (ignoreVariables, values, versionInfo) => {
   return out;
 
   function addQuestion(q, values, allQuestions, depth = 1, parentGroup) {
+    if (q.variable === "redis.host") {
+      console.log(shouldShow(q, values), values)
+    }
     if (!shouldShow(q, values)) {
       return;
     }
@@ -226,7 +251,7 @@ const allShowedQuestions = (ignoreVariables, values, versionInfo) => {
 
     out.push(q);
 
-    if (q.subquestions?.length) {
+    if (q.subquestions?.length && shouldShowSub(q, values, allQuestions)) {
       for (const sub of q.subquestions) {
         addQuestion(sub, values, allQuestions, depth + 1, q.group);
       }
