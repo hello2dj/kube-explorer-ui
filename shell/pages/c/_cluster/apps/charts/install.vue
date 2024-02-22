@@ -31,7 +31,7 @@ import { CATALOG as CATALOG_ANNOTATIONS, PROJECT } from '@shell/config/labels-an
 
 import { exceptionToErrorsArray } from '@shell/utils/error';
 import { clone, diff, get, set } from '@shell/utils/object';
-import { ignoreVariables, collectQuestionsErrors, getDefaultNamespaceAndName } from './install.helpers';
+import { ignoreVariables, collectQuestionsErrors, getDefaultNamespaceAndName, allQuestions } from './install.helpers';
 import { findBy, insertAt } from '@shell/utils/array';
 import Vue from 'vue';
 import { saferDump } from '@shell/utils/create-yaml';
@@ -287,6 +287,28 @@ export default {
         matching values in versionInfo.
       */
       this.chartValues = merge(merge({}, this.versionInfo?.values || {}), userValues);
+      if (!this.existing && this.query.appStatus !== 'UNINSTALLED') {
+        const qs = allQuestions(this.versionInfo)
+        qs.forEach(q => {
+          let value = q.default
+          if (q.type === 'boolean') {
+            if (q.default === 'true') {
+              value = true
+            } else if (q.default === 'false') {
+              value = false
+            } else {
+              value = !!q.default
+            }
+          }
+
+          if (q.type === 'int') {
+            if (_.isString(q.default)) {
+              value = parseInt(q.default)
+            }
+          }
+          set(this.chartValues, q.variable, value)
+        })
+      }
 
       /* Serializes an object as a YAML document */
       this.valuesYaml = saferDump(this.chartValues);

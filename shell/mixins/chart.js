@@ -127,6 +127,7 @@ export default {
         repoName:     query[REPO],
         chartName:    query[CHART],
         versionName:  query[VERSION],
+        appStatus: query['appStatus'],
         fromRepo: query['fromRepo'] === 'true',
         chartDir: query['chartDir'],
         workspaceId: query['workspaceId'],

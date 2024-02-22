@@ -1,8 +1,6 @@
 import cloneDeep from 'lodash/cloneDeep';
 import flattenDeep from 'lodash/flattenDeep';
 import compact from 'lodash/compact';
-import isUndefined from 'lodash/isUndefined';
-import isNull from 'lodash/isNull';
 import { JSONPath } from 'jsonpath-plus';
 import Vue from 'vue';
 import transform from 'lodash/transform';
@@ -12,6 +10,7 @@ import isEqual from 'lodash/isEqual';
 import difference from 'lodash/difference';
 import { splitObjectPath, joinObjectPath } from '@shell/utils/string';
 import { addObject } from '@shell/utils/array';
+import _ from 'lodash';
 
 export function set(obj, path, value) {
   let ptr = obj;
@@ -20,14 +19,28 @@ export function set(obj, path, value) {
     return;
   }
 
-  const parts = splitObjectPath(path);
+  const parts = _.flatten(splitObjectPath(path).map((p) => {
+    if (p.includes(']')) {
+      p = p.replace(/\]/g, '')
+    }
+
+    if (p.includes('[')) {
+      return p.replace(/\[/g, '.').split('.')
+    }
+    return p
+  })).map(p => {
+    if (!isNaN(p)) {
+      p = parseInt(p)
+    }
+    return p
+  });
 
   for (let i = 0; i < parts.length; i++) {
     const key = parts[i];
 
-    if (i === parts.length - 1) {
+    if ( i === parts.length - 1 ) {
       Vue.set(ptr, key, value);
-    } else if (!ptr[key]) {
+    } else if ( !ptr[key] ) {
       // Make sure parent keys exist
       Vue.set(ptr, key, {});
     }
@@ -83,7 +96,21 @@ export function _get(obj, path) {
     return obj?.[path];
   }
 
-  const parts = splitObjectPath(path);
+  const parts = _.flatten(splitObjectPath(path).map((p) => {
+    if (p.includes(']')) {
+      p = p.replace(/\]/g, '')
+    }
+
+    if (p.includes('[')) {
+      return p.replace(/\[/g, '.').split('.')
+    }
+    return p
+  })).map(p => {
+    if (!isNaN(p)) {
+      p = parseInt(p)
+    }
+    return p
+  });
 
   for (let i = 0; i < parts.length; i++) {
     if (!obj) {

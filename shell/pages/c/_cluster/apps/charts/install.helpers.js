@@ -146,30 +146,30 @@ function evalExpr(expr, values, question, allQuestions) {
 function migrate(expr) {
   let out;
 
-  if ( expr.includes('||') ) {
+  if (expr.includes('||')) {
     out = expr.split('||').map((x) => migrate(x)).join(' || ');
-  } else if ( expr.includes('&&') ) {
+  } else if (expr.includes('&&')) {
     out = expr.split('&&').map((x) => migrate(x)).join(' && ');
   } else {
     const parts = expr.match(/^(.*?)(!?=)(.*)$/);
 
-    if ( parts ) {
+    if (parts) {
       const key = parts[1].trim();
       const op = parts[2].trim() === '!=' ? '!=' : '==';
       const val = parts[3].trim();
 
-      if ( val === 'true' || val === 'false' || val === 'null' ) {
-        out = `${ key } ${ op } ${ val }`;
-      } else if ( val === '' ) {
+      if (val === 'true' || val === 'false' || val === 'null') {
+        out = `${key} ${op} ${val}`;
+      } else if (val === '') {
         // Existing charts expect `foo=` with `{foo: null}` to be true.
-        if ( op === '!=' ) {
-          out = `!!${ key }`;
+        if (op === '!=') {
+          out = `!!${key}`;
         } else {
-          out = `!${ key }`;
+          out = `!${key}`;
         }
         // out = `${ op === '!' ? '!' : '' }(${ key } == "" || ${ key } == null)`;
       } else {
-        out = `${ key } ${ op } "${ val }"`;
+        out = `${key} ${op} "${val}"`;
       }
     } else {
       try {
@@ -205,26 +205,26 @@ function shouldShow(q, values, allQuestions) {
 }
 
 const shouldShowSub = (q, values, allQuestions) => {
-    // Sigh, both singular and plural are used in the wild...
-    let expr = (q.subquestions_if === undefined ? q.subquestion_if : q.subquestions_if);
-    const old = (q.show_subquestions_if === undefined ? q.show_subquestion_if : q.show_subquestions_if);
+  // Sigh, both singular and plural are used in the wild...
+  let expr = (q.subquestions_if === undefined ? q.subquestion_if : q.subquestions_if);
+  const old = (q.show_subquestions_if === undefined ? q.show_subquestion_if : q.show_subquestions_if);
 
-    if (!expr && old !== undefined) {
-      if (old === false || old === 'false') {
-        expr = `!${q.variable}`;
-      } else if (old === true || old === 'true') {
-        expr = `!!${q.variable}`;
-      } else {
-        expr = `${q.variable} == "${old}"`;
-      }
+  if (!expr && old !== undefined) {
+    if (old === false || old === 'false') {
+      expr = `!${q.variable}`;
+    } else if (old === true || old === 'true') {
+      expr = `!!${q.variable}`;
+    } else {
+      expr = `${q.variable} == "${old}"`;
     }
-
-    if (expr) {
-      return evalExpr(expr, values, q, allQuestions);
-    }
-
-    return true;
   }
+
+  if (expr) {
+    return evalExpr(expr, values, q, allQuestions);
+  }
+
+  return true;
+}
 
 const allShowedQuestions = (ignoreVariables, values, versionInfo) => {
   let out = []
@@ -239,9 +239,6 @@ const allShowedQuestions = (ignoreVariables, values, versionInfo) => {
   return out;
 
   function addQuestion(q, values, allQuestions, depth = 1, parentGroup) {
-    if (q.variable === "redis.host") {
-      console.log(shouldShow(q, values), values)
-    }
     if (!shouldShow(q, values)) {
       return;
     }
@@ -257,6 +254,25 @@ const allShowedQuestions = (ignoreVariables, values, versionInfo) => {
       }
     }
   }
+}
+
+export const allQuestions = (versionInfo) => {
+  let out = []
+  versionInfo?.questions?.questions?.forEach(q => {
+    addQuestion(q)
+  })
+
+  function addQuestion(q) {
+    out.push(q);
+
+    if (q.subquestions?.length) {
+      for (const sub of q.subquestions) {
+        addQuestion(sub);
+      }
+    }
+  }
+
+  return out
 }
 
 export const collectQuestionsErrors = (ignoreVariables = [], versionInfo, values) => {

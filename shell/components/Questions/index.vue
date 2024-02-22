@@ -244,11 +244,6 @@ export default {
       }
 
       const out = Object.values(map);
-      if (!this.initialized) {
-        this.setDefault(out)
-        this.initialized = true
-      }
-
       return sortBy(out, 'weight:desc');
     },
 
@@ -430,32 +425,6 @@ export default {
 
       return true;
     },
-    setDefault(groups) {
-      groups.forEach(g => {
-        g.questions.forEach(q => {
-          if (q && !(_.isUndefined(q.default) || _.isNull(q.default) || q.default === '')) {
-            let value = q.default
-            if (q.type === 'boolean') {
-              if (q.default === 'true') {
-                value = true
-              } else if (q.default === 'false') {
-                value = false
-              } else {
-                value = !!q.default
-              }
-            }
-
-            if (q.type === 'int') {
-              if (_.isString(q.default)) {
-                value = parseInt(q.default)
-              }
-            }
-
-            set(this.value, q.variable, value)
-          }
-        })
-      })
-    }
   },
 };
 </script>
