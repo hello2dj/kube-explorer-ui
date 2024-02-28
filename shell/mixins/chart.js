@@ -25,6 +25,17 @@ const questions = [{
   type: 'string',
   group: '轻云配置',
   description: '输入格式 "key1=value1 key2=value2", 多个使用空格分隔, 全局替换对配置进行替换'
+}, {
+  variable: 'qy.job',
+  label: 'job 升级处理方式',
+  default: '先删除旧 job',
+  type: 'enum',
+  options: [
+    "不处理",
+    "先删除旧 job",
+  ],
+  group: '轻云配置',
+  description: 'job 在升级时如果没有删除旧的 job，新的 job 不会执行'
 }]
 
 export default {
