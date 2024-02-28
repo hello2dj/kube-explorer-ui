@@ -30,7 +30,7 @@ import {
 import { CATALOG as CATALOG_ANNOTATIONS, PROJECT } from '@shell/config/labels-annotations';
 
 import { exceptionToErrorsArray } from '@shell/utils/error';
-import { clone, diff, get, set } from '@shell/utils/object';
+import { clone, diff, get, set, replaceValue } from '@shell/utils/object';
 import { ignoreVariables, collectQuestionsErrors, getDefaultNamespaceAndName, allQuestions } from './install.helpers';
 import { findBy, insertAt } from '@shell/utils/array';
 import Vue from 'vue';
@@ -287,7 +287,7 @@ export default {
         matching values in versionInfo.
       */
       this.chartValues = merge(merge({}, this.versionInfo?.values || {}), userValues);
-      if (!this.existing && this.query.appStatus !== 'UNINSTALLED') {
+      if (!this.existing && this.versionInfo?.appStatus !== 'UNINSTALLED') {
         const qs = allQuestions(this.versionInfo)
         qs.forEach(q => {
           let value = q.default
@@ -939,6 +939,9 @@ export default {
         }), '*')
     },
 
+    async replace() {
+      replaceValue(this.chartValues)
+    },
     async finish(btnCb) {
       try {
         const isUpgrade = !!this.existing;
@@ -1248,6 +1251,7 @@ export default {
     <!-- <TypeDescription resource="chart" /> -->
     <Wizard
       v-if="value"
+      :showReplacement="true"
       :steps="steps"
       :errors="errors"
       :edit-first-step="true"
@@ -1257,6 +1261,7 @@ export default {
       class="wizard"
       :class="{'windowsIncompatible': windowsIncompatible}"
       @finish="finish"
+      @replace="replace"
     >
       <template
         v-for="customStep of customSteps"

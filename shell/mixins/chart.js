@@ -17,6 +17,16 @@ import { LINUX } from '@shell/store/catalog';
 import { clone } from '@shell/utils/object';
 import { merge } from 'lodash';
 
+
+const questions = [{
+  variable: 'qy.replacement',
+  label: '全局替换',
+  default: '',
+  type: 'string',
+  group: '轻云配置',
+  description: '输入格式 "key1=value1 key2=value2", 多个使用空格分隔, 全局替换对配置进行替换'
+}]
+
 export default {
   data() {
     return {
@@ -127,7 +137,6 @@ export default {
         repoName:     query[REPO],
         chartName:    query[CHART],
         versionName:  query[VERSION],
-        appStatus: query['appStatus'],
         fromRepo: query['fromRepo'] === 'true',
         chartDir: query['chartDir'],
         workspaceId: query['workspaceId'],
@@ -303,6 +312,9 @@ export default {
           }
         }); 
         this.versionInfo = response.data
+        if (this.versionInfo.questions) {
+          this.versionInfo.questions.questions = [...questions, ...(this.versionInfo.questions.questions ||[])]
+        }
         // Here we set us versionInfo. The returned
         // object contains everything all info
         // about a currently installed app, and it has the

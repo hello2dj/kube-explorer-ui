@@ -12,6 +12,65 @@ import { splitObjectPath, joinObjectPath } from '@shell/utils/string';
 import { addObject } from '@shell/utils/array';
 import _ from 'lodash';
 
+const getReplacement = (value) => {
+  if (!value) {
+    return null
+  }
+
+  const rs = value.split(' ')
+  if (!rs.length) {
+    return null
+  }
+
+  return rs.map(r => {
+    const parts = r.split('=')
+    if (parts.length !== 2) {
+      return null
+    }
+
+    if (!parts[0].trim() || !parts[1].trim()) {
+      return null
+    }
+
+    return {
+      key: parts[0].trim(),
+      value: parts[1].trim(),
+    }
+  }).filter(r => !!r)
+}
+
+export const replaceValue = (obj) => {
+  if (!obj.qy?.replacement) {
+    return
+  }
+  const replacement = getReplacement(obj.qy.replacement)
+  if (!replacement) {
+    return
+  }
+  _replaceValue(obj, replacement)
+}
+
+function _replaceValue(obj, replacements) {
+  _.map(obj, (value, k) => {
+    if (!value || k == 'qy') {
+      return
+    }
+
+    if (_.isString(value)) {
+      replacements.forEach(r => {
+        value = value.replace(r.key, r.value)
+        console.log("替换完成", value, r)
+      })
+      Vue.set(obj, k, value);
+      return
+    }
+
+    if (_.isObject(value) || _.isArray(value)) {
+      _replaceValue(value, replacements)
+    }
+  })
+}
+
 export function set(obj, path, value) {
   let ptr = obj;
 

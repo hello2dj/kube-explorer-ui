@@ -74,6 +74,10 @@ export default {
       type:    Boolean,
       default: true
     },
+    showReplacement: {
+      type:    Boolean,
+      default: false
+    },
 
     // place the same title (e.g. the type of thing being created by wizard) on every page
     bannerTitle: {
@@ -218,6 +222,9 @@ export default {
 
     finish(cb) {
       this.$emit('finish', cb);
+    },
+    replace() {
+      this.$emit('replace');
     },
 
     next() {
@@ -431,6 +438,14 @@ export default {
                 <t k="wizard.previous" />
               </button>
             </slot>
+            <button
+              type="button"
+              v-if="showReplacement && activeStepIndex === visibleSteps.length-1"
+              class="btn role-secondary"
+              @click="replace"
+            >
+              全局替换
+            </button>
             <slot
               v-if="activeStepIndex === visibleSteps.length-1"
               name="finish"

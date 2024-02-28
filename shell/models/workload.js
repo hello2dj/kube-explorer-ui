@@ -74,7 +74,7 @@ export default class Workload extends WorkloadService {
       total:   1,
     });
 
-    const toFilter = ['cloneYaml', 'promptRemove'];
+    const toFilter = ['cloneYaml'];
 
     out = out.filter((action) => {
       if (!toFilter.includes(action.action)) {
